@@ -19,5 +19,6 @@ readme = 'README.md'
 license = {'file' = 'LICENSE'}
 dependencies = [
     "requests",
-    "setuptools"
+    "setuptools",
+    "jinja2==2.11"
 ]
