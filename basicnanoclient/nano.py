@@ -11,7 +11,14 @@ session: requests.Session = requests.Session()
 
 
 class BasicNanoClient():
-    """Nano RPC Client."""
+    """Nano RPC Client.
+
+    ```py
+    >>> from basicnanoclient.nano import BasicNanoClient
+    >>> client = BasicNanoClient("http://127.0.0.1:17076")
+    >>> client.send(...)
+    ```
+    """
 
     def __init__(self, rpc_network: str) -> None:
         """Constructor."""

@@ -5,6 +5,7 @@ edit_uri: blob/main/docs/
 nav:
   - Home: 'index.md'
   - Classes:
+      - 'Account': 'account.md'
       - 'BasicNanoClient': 'basicnanoclient.md'
   - About:
       - 'License': 'LICENSE.md'

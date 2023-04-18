@@ -6,7 +6,7 @@ show_missing = true
 
 [project]
 name = "basicnanoclient"
-version = "0.0.4"
+version = "0.0.5"
 description = "Nano RPC python client"
 urls = {'Bug Tracker' = 'https://github.com/nanoswap/basicnanoclient/issues'}
 classifiers = [

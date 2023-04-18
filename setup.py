@@ -10,7 +10,7 @@ def load_long_description(filename: str) -> str:
 
 setup(
     name="basicnanoclient",
-    version="0.0.4",
+    version="0.0.5",
     author="Nathaniel Schultz",
     author_email="nate@nanoswap.finance",
     description="Nano Cryptocurrency RPC Client",
