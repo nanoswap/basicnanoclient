@@ -10,7 +10,7 @@ def load_long_description(filename: str) -> str:
 
 setup(
     name="basicnanoclient",
-    version="0.0.2",
+    version="0.0.3",
     author="Nathaniel Schultz",
     author_email="nate@nanoswap.finance",
     description="Nano Cryptocurrency RPC Client",
@@ -26,5 +26,5 @@ setup(
     ],
     package_dir={'basicnanoclient': "basicnanoclient"},
     packages=find_packages("basicnanoclient"),
-    python_requires=">=3.6"
+    python_requires=">=3.11"
 )
