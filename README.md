@@ -21,7 +21,7 @@ pip install basicnanoclient
 
 ## Documentation
 
-https://nanoclient.readthedocs.io/
+https://basicnanoclient.readthedocs.io/
 
 ### Build docs locally
 `mkdocs serve`
