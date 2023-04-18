@@ -17,5 +17,5 @@ Faker
 
 # for documentation / mkdocs
 mkdocs
-mkdocstrings
+mkdocstrings==0.15.0
 mkdocstrings-python
