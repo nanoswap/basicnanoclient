@@ -1,0 +1,20 @@
+site_name: "nanoclient"
+repo_url: https://github.com/nanoswap/nanoclient
+edit_uri: blob/main/docs/
+
+nav:
+  - Home: 'index.md'
+  - Classes:
+      - 'NanoClient': 'classes_nano.md'
+  - About:
+      - 'License': 'LICENSE.md'
+
+theme:
+  name: "readthedocs"
+
+plugins:
+- search
+- mkdocstrings:
+    handlers:
+      python:
+        paths: [.]  # actually not needed, default

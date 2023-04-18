@@ -1,0 +1,13 @@
+nox
+mock
+pytest
+flake8
+flake8-docstrings
+flake8-annotations
+flake8-import-order
+Faker
+
+# for documentation / mkdocs
+mkdocs
+mkdocstrings
+mkdocstrings-python
