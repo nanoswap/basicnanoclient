@@ -1,6 +1,6 @@
 # NanoClient
 
-::: basicnanoclient.nano.NanoClient
+::: basicnanoclient.NanoClient
     handler: python
     options:
       members:
