@@ -1,4 +1,21 @@
 requests
 setuptools
+
+# for readthedocs
 jinja2==2.11
 markupsafe==1.1.1
+
+# for testing
+nox
+mock
+pytest
+flake8
+flake8-docstrings
+flake8-annotations
+flake8-import-order
+Faker
+
+# for documentation / mkdocs
+mkdocs
+mkdocstrings
+mkdocstrings-python

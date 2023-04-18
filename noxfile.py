@@ -17,7 +17,6 @@ def build(session: nox.Session) -> None:
 def tests(session: nox.Session) -> None:
     """Run the tests."""
     session.install("-r", "requirements.txt")
-    session.install("-r", "requirements-dev.txt")
     session.install('pytest')
     session.install("pytest-cov")
     session.env["PYTHONPATH"] = "basicnanoclient"
@@ -28,7 +27,7 @@ def tests(session: nox.Session) -> None:
 def lint(session: nox.Session) -> None:
     """Run the linter checks."""
     session.install('flake8')
-    session.install("-r", "requirements-dev.txt")
+    session.install("-r", "requirements.txt")
 
     # lint the source code
     session.run(
