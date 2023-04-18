@@ -2,7 +2,7 @@ __package__ = "basicnanoclient"
 
 import subprocess
 import uuid
-from typing import Any, Dict, Self
+from typing import Any, Dict
 
 import requests
 
@@ -13,11 +13,11 @@ session: requests.Session = requests.Session()
 class NanoClient():
     """Nano RPC Client."""
 
-    def __init__(self: Self, rpc_network: str) -> None:
+    def __init__(self, rpc_network: str) -> None:
         """Constructor."""
         self.rpc_network = rpc_network
 
-    def generate_private_key(self: Self) -> str:
+    def generate_private_key(self) -> str:
         """Generate a private key using the /dev/urandom command.
 
         Returns:
@@ -32,7 +32,7 @@ class NanoClient():
         )
         return process.stdout.read()
 
-    def key_expand(self: Self, key: str) -> Dict[str, Any]:
+    def key_expand(self, key: str) -> Dict[str, Any]:
         """Expands a given Nano private key into a public key
         and account address.
 
@@ -54,7 +54,7 @@ class NanoClient():
             "key": key
         }).json()
 
-    def wallet_create(self: Self, key: str) -> Dict[str, Any]:
+    def wallet_create(self, key: str) -> Dict[str, Any]:
         """Creates a new Nano wallet with a given seed (private key).
 
         Args:
@@ -74,7 +74,7 @@ class NanoClient():
             "seed": key,
         }).json()
 
-    def accounts_create(self: Self, wallet: str, count: int = 1) -> Dict[str, Any]:
+    def accounts_create(self, wallet: str, count: int = 1) -> Dict[str, Any]:
         """Creates a specified number of new Nano accounts in a given wallet.
 
         Args:
@@ -95,7 +95,7 @@ class NanoClient():
             "count": count
         }).json()
 
-    def receive(self: Self, wallet: str, account: str, block: str) -> Dict[str, Any]:
+    def receive(self, wallet: str, account: str, block: str) -> Dict[str, Any]:
         """Receives a pending Nano block and adds it to the wallet's balance.
 
         Args:
@@ -116,7 +116,7 @@ class NanoClient():
             "block": block
         }).json()
 
-    def account_info(self: Self, account: str) -> Dict[str, Any]:
+    def account_info(self, account: str) -> Dict[str, Any]:
         """Retrieves information about a Nano account.
 
         Including its balance and representative.
@@ -137,7 +137,7 @@ class NanoClient():
             "account": account
         }).json()
 
-    def wallet_info(self: Self, wallet: str) -> Dict[str, Any]:
+    def wallet_info(self, wallet: str) -> Dict[str, Any]:
         """Retrieves information about a Nano wallet.
 
         Parameters:
@@ -151,7 +151,7 @@ class NanoClient():
             "wallet": wallet
         }).json()
 
-    def ledger(self: Self, account: str, count: int) -> Dict[str, Any]:
+    def ledger(self, account: str, count: int) -> Dict[str, Any]:
         """Retrieves the transaction history for a Nano account.
 
         Parameters:
@@ -168,7 +168,7 @@ class NanoClient():
             "count": count
         }).json()
 
-    def wallet_history(self: Self, wallet: str) -> Dict[str, Any]:
+    def wallet_history(self, wallet: str) -> Dict[str, Any]:
         """Retrieves the transaction history for a Nano wallet.
 
         Parameters:
@@ -183,7 +183,7 @@ class NanoClient():
             "wallet": wallet
         }).json()
 
-    def account_list(self: Self, wallet: str) -> Dict[str, Any]:
+    def account_list(self, wallet: str) -> Dict[str, Any]:
         """Retrieves a list of Nano accounts associated with a wallet.
 
         Parameters:
@@ -198,7 +198,7 @@ class NanoClient():
             "wallet": wallet
         }).json()
 
-    def send(self: Self, wallet: str, source: str, destination: str, amount: int) -> Dict[str, Any]:  # noqa: E501
+    def send(self, wallet: str, source: str, destination: str, amount: int) -> Dict[str, Any]:  # noqa: E501
         """Sends a specified amount of Nano from one account to another.
 
         Parameters:
@@ -220,7 +220,7 @@ class NanoClient():
         }).json()
 
     def receivable(
-            self: Self,
+            self,
             account: str,
             count: int = 1,
             threshold: int = 1000000000000000000000000) -> Dict[str, Any]:
@@ -246,7 +246,7 @@ class NanoClient():
         }).json()
 
     def block_create(
-            self: Self,
+            self,
             previous: str,
             account: str,
             representative: str,
@@ -280,7 +280,7 @@ class NanoClient():
             "key": key
         }).json()
 
-    def process(self: Self, block: str) -> dict:
+    def process(self, block: str) -> dict:
         """ Processes a block.
 
         Args:
