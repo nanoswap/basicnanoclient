@@ -1,4 +1,4 @@
 requests
 setuptools
 jinja2==2.11
-markupsafe = "==1.1.1"
+markupsafe==1.1.1
