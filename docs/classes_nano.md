@@ -1,6 +1,6 @@
 # NanoClient
 
-::: ipfskvs.nano.NanoClient
+::: basicnanoclient.nano.NanoClient
     handler: python
     options:
       members:

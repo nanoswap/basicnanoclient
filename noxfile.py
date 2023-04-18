@@ -5,7 +5,7 @@ import nox
 def build(session: nox.Session) -> None:
     """Build the dist."""
     session.install("build")
-    session.env["PYTHONPATH"] = "nanoclient"
+    session.env["PYTHONPATH"] = "basicnanoclient"
     session.run("python", "-m", "build")
 
     # publish pip package
@@ -20,8 +20,8 @@ def tests(session: nox.Session) -> None:
     session.install("-r", "requirements-dev.txt")
     session.install('pytest')
     session.install("pytest-cov")
-    session.env["PYTHONPATH"] = "nanoclient"
-    session.run("pytest", "--cov=nanoclient")
+    session.env["PYTHONPATH"] = "basicnanoclient"
+    session.run("pytest", "--cov=basicnanoclient")
 
 
 @nox.session(python=["python3.11"])
@@ -32,7 +32,7 @@ def lint(session: nox.Session) -> None:
 
     # lint the source code
     session.run(
-        'flake8', 'nanoclient',
+        'flake8', 'basicnanoclient',
         '--docstring-convention', 'google',
         '--ignore=D100'
     )

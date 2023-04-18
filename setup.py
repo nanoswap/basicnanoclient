@@ -9,22 +9,22 @@ def load_long_description(filename: str) -> str:
 
 
 setup(
-    name="nanoclient",
-    version="0.0.10",
+    name="basicnanoclient",
+    version="0.0.1",
     author="Nathaniel Schultz",
     author_email="nate@nanoswap.finance",
-    description="IPFS Key Value Store",
+    description="Nano Cryptocurrency RPC Client",
     long_description=load_long_description("README.md"),
     long_description_content_type="text/markdown",
-    url="https://github.com/nanoswap/nanoclient",
+    url="https://github.com/nanoswap/basicnanoclient",
     project_urls={
-        "Bug Tracker": "https://github.com/nanoswap/nanoclient/issues",
+        "Bug Tracker": "https://github.com/nanoswap/basicnanoclient/issues",
     },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: The Unlicense (Unlicense)"
     ],
-    package_dir={'nanoclient': "nanoclient"},
-    packages=find_packages("nanoclient"),
+    package_dir={'basicnanoclient': "basicnanoclient"},
+    packages=find_packages("basicnanoclient"),
     python_requires=">=3.6"
 )

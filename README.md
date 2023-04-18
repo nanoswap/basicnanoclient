@@ -1,4 +1,4 @@
-# nanoclient
+# basicnanoclient
 
 A nano (XNO) cryptocurrency RPC python client
 
@@ -16,7 +16,7 @@ A nano (XNO) cryptocurrency RPC python client
 ## Installation
 
 ```
-pip install nanoclient
+pip install basicnanoclient
 ```
 
 ## Documentation

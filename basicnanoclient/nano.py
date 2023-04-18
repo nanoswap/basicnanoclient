@@ -1,4 +1,4 @@
-__package__ = "nano"
+__package__ = "nanopy"
 
 import subprocess
 import uuid
