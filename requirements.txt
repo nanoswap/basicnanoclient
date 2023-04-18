@@ -1,10 +1,6 @@
 requests
 setuptools
 
-# for readthedocs
-jinja2==2.11
-markupsafe==1.1.1
-
 # for testing
 nox
 mock
@@ -17,5 +13,5 @@ Faker
 
 # for documentation / mkdocs
 mkdocs
-mkdocstrings==0.15.0
+mkdocstrings
 mkdocstrings-python

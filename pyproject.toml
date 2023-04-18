@@ -20,9 +20,7 @@ license = {'file' = 'LICENSE'}
 dependencies = [
     "requests",
     "setuptools",
-    "jinja2==2.11",
-    "markupsafe==1.1.1",
     "mkdocs",
-    "mkdocstrings==0.15.0",
+    "mkdocstrings",
     "mkdocstrings-python"
 ]
