@@ -10,7 +10,7 @@ rpc_network: str = "http://127.0.0.1:17076"
 session: requests.Session = requests.Session()
 
 
-class NanoClient():
+class BasicNanoClient():
     """Nano RPC Client."""
 
     def __init__(self, rpc_network: str) -> None:
