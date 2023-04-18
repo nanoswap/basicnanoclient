@@ -1,6 +1,6 @@
 # IPFS Key Value Store 
 
-[github.com/nanoswap/nanoclient](https://github.com/nanoswap/nanoclient)
+[github.com/nanoswap/basicnanoclient](https://github.com/nanoswap/basicnanoclient)
 
 # Installation
 
