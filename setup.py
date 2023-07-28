@@ -1,5 +1,6 @@
 """Setup."""
 from setuptools import find_packages, setup
+from basicnanoclient import __version__
 
 
 def load_long_description(filename: str) -> str:
@@ -10,7 +11,7 @@ def load_long_description(filename: str) -> str:
 
 setup(
     name="basicnanoclient",
-    version="0.0.5",
+    version=__version__,
     author="Nathaniel Schultz",
     author_email="nate@nanoswap.finance",
     description="Nano Cryptocurrency RPC Client",
@@ -25,6 +26,6 @@ setup(
         "License :: OSI Approved :: The Unlicense (Unlicense)"
     ],
     package_dir={'basicnanoclient': "basicnanoclient"},
-    packages=find_packages("basicnanoclient"),
+    packages=find_packages(exclude=['tests', 'tests.*']),
     python_requires=">=3.11"
 )
