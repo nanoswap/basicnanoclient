@@ -27,5 +27,6 @@ setup(
     ],
     package_dir={'basicnanoclient': "basicnanoclient"},
     packages=find_packages(exclude=['tests', 'tests.*']),
-    python_requires=">=3.11"
+    python_requires=">=3.11",
+    install_requires=["requests"],
 )

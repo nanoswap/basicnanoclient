@@ -4,6 +4,8 @@ import nox
 @nox.session(python=["python3.11"])
 def build(session: nox.Session) -> None:
     """Build the dist."""
+    session.install("-r", "requirements.txt")
+    session.install("requests")
     session.install("build")
     session.env["PYTHONPATH"] = "basicnanoclient"
     session.run("python", "-m", "build")
