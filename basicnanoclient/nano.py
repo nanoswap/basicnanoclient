@@ -2,6 +2,7 @@ __package__ = "basicnanoclient"
 
 import subprocess
 import uuid
+import secrets
 from typing import Any, Dict
 
 import requests
@@ -30,14 +31,8 @@ class BasicNanoClient():
         Returns:
             The generated key
         """
-        command = "LC_ALL=C cat /dev/urandom | LC_ALL=C tr -dc '0-9A-F' | LC_ALL=C head -c${1:-64}"  # noqa: E501
-        process = subprocess.Popen(
-            command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            universal_newlines=True
-        )
-        return process.stdout.read()
+        return secrets.token_hex(32)  # 32 bytes = 64 hexadecimal characters
+
 
     def key_expand(self, key: str) -> Dict[str, Any]:
         """Expands a given Nano private key into a public key
@@ -205,27 +200,6 @@ class BasicNanoClient():
             "wallet": wallet
         }).json()
 
-    def send(self, wallet: str, source: str, destination: str, amount: int) -> Dict[str, Any]:  # noqa: E501
-        """Sends a specified amount of Nano from one account to another.
-
-        Parameters:
-            wallet (str): The Nano wallet address.
-            source (str): The Nano account address to send from.
-            destination (str): The Nano account address to send to.
-            amount (int): The amount of Nano to send in raw units.
-
-        Returns:
-            A dictionary containing information about the transaction.
-        """
-        return session.post(self.rpc_network, json={
-            "action": "send",
-            "wallet": wallet,
-            "source": source,
-            "destination": destination,
-            "amount": str(amount),
-            "id": str(uuid.uuid5(uuid.NAMESPACE_DNS, 'nanoswap.finance'))
-        }).json()
-
     def receivable(
             self,
             account: str,
@@ -301,3 +275,63 @@ class BasicNanoClient():
             "block": block
         })
         return response.json()
+
+    def sign_and_send(
+            self,
+            previous: str,
+            account: str,
+            representative: str,
+            balance: str,
+            link: str,
+            key: str) -> dict:
+        """
+        Signs and sends a transaction.
+
+        Args:
+            previous (str): The previous block hash.
+            account (str): The account address.
+            representative (str): The representative address.
+            balance (str): The new account balance.
+            link (str): The link to a previous block.
+            key (str): The account private key.
+
+        Returns:
+            dict: A dictionary containing information
+                about the transaction.
+        """
+        # Create the block
+        block = self.block_create(previous, account, representative, balance, link, key)
+        block_hash = block.get('hash')
+
+        # Process the block
+        response = self.process(block_hash)
+
+        return response
+
+    def send(self, wallet: str, source: str, destination: str, amount: int) -> Dict[str, Any]:  # noqa: E501
+        """Sends a specified amount of Nano from one account to another.
+
+        Parameters:
+            wallet (str): The Nano wallet address.
+            source (str): The Nano account address to send from.
+            destination (str): The Nano account address to send to.
+            amount (int): The amount of Nano to send in raw units.
+
+        Returns:
+            A dictionary containing information about the transaction.
+        """
+        # Retrieve the wallet info
+        wallet_info = self.wallet_info(wallet)
+        key = wallet_info.get('seed')  # Get the private key
+
+        # Retrieve the account info
+        account_info = self.account_info(source)
+        previous = account_info.get('frontier')
+        representative = account_info.get('representative')
+
+        # Calculate new balance after sending the amount
+        current_balance = int(account_info.get('balance'))  # Convert balance to int for calculations
+        new_balance = str(current_balance - amount)  # Subtract amount to be sent and convert back to str
+
+        # Sign and send the transaction
+        return self.sign_and_send(previous, source, representative, new_balance, destination, key)
