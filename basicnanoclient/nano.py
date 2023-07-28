@@ -308,7 +308,7 @@ class BasicNanoClient():
 
         return response
 
-    def send(self, wallet: str, source: str, destination: str, amount: int) -> Dict[str, Any]:  # noqa: E501
+    def send(self, wallet: str, source: str, destination: str, amount: int, key: str) -> Dict[str, Any]:  # noqa: E501
         """Sends a specified amount of Nano from one account to another.
 
         Parameters:
@@ -322,7 +322,7 @@ class BasicNanoClient():
         """
         # Retrieve the wallet info
         wallet_info = self.wallet_info(wallet)
-        key = wallet_info.get('seed')  # Get the private key
+        key = wallet_info.get(key)
 
         # Retrieve the account info
         account_info = self.account_info(source)
