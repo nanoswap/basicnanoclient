@@ -2,7 +2,6 @@ __package__ = "basicnanoclient"
 
 import subprocess
 import uuid
-import secrets
 from typing import Any, Dict
 
 import requests
@@ -24,15 +23,6 @@ class BasicNanoClient():
     def __init__(self, rpc_network: str) -> None:
         """Constructor."""
         self.rpc_network = rpc_network
-
-    def generate_private_key(self) -> str:
-        """Generate a private key using the /dev/urandom command.
-
-        Returns:
-            The generated key
-        """
-        return secrets.token_hex(32)  # 32 bytes = 64 hexadecimal characters
-
 
     def key_expand(self, key: str) -> Dict[str, Any]:
         """Expands a given Nano private key into a public key
