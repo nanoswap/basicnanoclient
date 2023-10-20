@@ -27,7 +27,14 @@ https://basicnanoclient.readthedocs.io/
 `mkdocs serve`
 
 ## Tests
-To only run tests: `pytest --cov=basicnanoclient`  
+To only run tests: `pytest --cov=basicnanoclient --cov-fail-under=80`
+
+To run style checks:  
+```
+flake8 basicnanoclient --docstring-convention google --ignore=D100
+flake8 tests --docstring-convention google --ignore=D100
+```
+
 To run all checks: `nox`
 
 ### Before running tests:

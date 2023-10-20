@@ -5,7 +5,6 @@
     options:
       members:
         - __init__
-        - generate_private_key
         - key_expand
         - wallet_create
         - accounts_create
@@ -15,9 +14,10 @@
         - ledger
         - wallet_history
         - account_list
-        - send
         - receivable
         - block_create
         - process
+        - sign_and_send
+        - send
       show_root_heading: true
       show_source: true
