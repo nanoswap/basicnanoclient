@@ -131,11 +131,48 @@ class TestBasicNanoClient(unittest.TestCase):
         )
         self.assertEqual(response["hash"], "sample_hash")
 
-    @patch('requests.post')
-    def test_send(self: Self, mock_post: Mock) -> None:
+    @patch.object(BasicNanoClient, 'sign_and_send')
+    @patch.object(BasicNanoClient, 'account_info')
+    @patch.object(BasicNanoClient, 'wallet_info')
+    def test_send(
+            self: Self,
+            mock_wallet_info: Mock,
+            mock_account_info: Mock,
+            mock_sign_and_send: Mock) -> None:
         """Test the send method."""
-        # TODO
-        pass
+        # Mock wallet_info response
+        mock_wallet_info.return_value = {
+            "key": "sample_wallet_private_key"
+        }
+
+        # Mock account_info response
+        mock_account_info.return_value = {
+            "frontier": "sample_frontier",
+            "representative": "sample_representative",
+            "balance": "1000"  # Some sample balance
+        }
+
+        # Mock sign_and_send response
+        mock_sign_and_send.return_value = {
+            "hash": "sample_transaction_hash"
+        }
+
+        # Call the send method
+        response = self.client.send(
+            "sample_wallet",
+            "sample_source",
+            "sample_destination",
+            100,  # some sample amount less than the balance
+            "sample_key"
+        )
+
+        # Check the response
+        self.assertEqual(response["hash"], "sample_transaction_hash")
+
+        # Optionally: Check if methods were called with correct arguments
+        mock_wallet_info.assert_called_once_with("sample_wallet")
+        mock_account_info.assert_called_once_with("sample_source")
+        mock_sign_and_send.assert_called_once()
 
     @patch('requests.Session.post')
     def test_account_info_request_exception(
