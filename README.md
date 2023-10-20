@@ -27,7 +27,7 @@ https://basicnanoclient.readthedocs.io/
 `mkdocs serve`
 
 ## Tests
-To only run tests: `pytest`  
+To only run tests: `pytest --cov=basicnanoclient`  
 To run all checks: `nox`
 
 ### Before running tests:
