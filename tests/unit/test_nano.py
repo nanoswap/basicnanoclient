@@ -102,6 +102,41 @@ class TestBasicNanoClient(unittest.TestCase):
         response = self.client.ledger("sample_account", 2)
         self.assertEqual(len(response["history"]), 2)
 
+    @patch('requests.post')
+    def test_process(self: Self, mock_post: Mock) -> None:
+        """Test the process method."""
+        self.mock_response.json.return_value = {
+            "hash": "sample_hash"
+        }
+        mock_post.return_value = self.mock_response
+
+        response = self.client.process("sample_block")
+        self.assertEqual(response["hash"], "sample_hash")
+
+    @patch('requests.post')
+    def test_sign_and_send(self: Self, mock_post: Mock) -> None:
+        """Test the sign_and_send method."""
+        self.mock_response.json.return_value = {
+            "hash": "sample_hash"
+        }
+        mock_post.return_value = self.mock_response
+
+        response = self.client.sign_and_send(
+            "sample_previous",
+            "sample_account",
+            "sample_representative",
+            "sample_balance",
+            "sample_link",
+            "sample_key"
+        )
+        self.assertEqual(response["hash"], "sample_hash")
+
+    @patch('requests.post')
+    def test_send(self: Self, mock_post: Mock) -> None:
+        """Test the send method."""
+        # TODO
+        pass
+
     @patch('requests.Session.post')
     def test_account_info_request_exception(
             self: Self,
