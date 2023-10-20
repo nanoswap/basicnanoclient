@@ -1,8 +1,6 @@
 __package__ = "basicnanoclient"
 
-import subprocess
-import uuid
-from typing import Any, Dict
+from typing import Any, Dict, Self
 
 import requests
 
@@ -20,28 +18,12 @@ class BasicNanoClient():
     ```
     """
 
-    def __init__(self, rpc_network: str) -> None:
+    def __init__(self: Self, rpc_network: str) -> None:
         """Constructor."""
         self.rpc_network = rpc_network
 
-    def generate_private_key(self) -> str:
-        """Generate a private key using the /dev/urandom command.
-
-        Returns:
-            The generated key
-        """
-        command = "LC_ALL=C cat /dev/urandom | LC_ALL=C tr -dc '0-9A-F' | LC_ALL=C head -c${1:-64}"  # noqa: E501
-        process = subprocess.Popen(
-            command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            universal_newlines=True
-        )
-        return process.stdout.read()
-
-    def key_expand(self, key: str) -> Dict[str, Any]:
-        """Expands a given Nano private key into a public key
-        and account address.
+    def key_expand(self: Self, key: str) -> Dict[str, Any]:
+        """Expand a private key into a public key and account address.
 
         Args:
             key (str): A 64-character hexadecimal string representing the
@@ -61,8 +43,8 @@ class BasicNanoClient():
             "key": key
         }).json()
 
-    def wallet_create(self, key: str) -> Dict[str, Any]:
-        """Creates a new Nano wallet with a given seed (private key).
+    def wallet_create(self: Self, key: str) -> Dict[str, Any]:
+        """Create a new Nano wallet with a given seed (private key).
 
         Args:
             key (str): A 64-character hexadecimal string representing the
@@ -81,8 +63,11 @@ class BasicNanoClient():
             "seed": key,
         }).json()
 
-    def accounts_create(self, wallet: str, count: int = 1) -> Dict[str, Any]:
-        """Creates a specified number of new Nano accounts in a given wallet.
+    def accounts_create(
+            self: Self,
+            wallet: str,
+            count: int = 1) -> Dict[str, Any]:
+        """Create a specified number of new Nano accounts in a given wallet.
 
         Args:
             wallet (str): The Nano wallet ID.
@@ -102,7 +87,11 @@ class BasicNanoClient():
             "count": count
         }).json()
 
-    def receive(self, wallet: str, account: str, block: str) -> Dict[str, Any]:
+    def receive(
+            self: Self,
+            wallet: str,
+            account: str,
+            block: str) -> Dict[str, Any]:
         """Receives a pending Nano block and adds it to the wallet's balance.
 
         Args:
@@ -123,8 +112,8 @@ class BasicNanoClient():
             "block": block
         }).json()
 
-    def account_info(self, account: str) -> Dict[str, Any]:
-        """Retrieves information about a Nano account.
+    def account_info(self: Self, account: str) -> Dict[str, Any]:
+        """Retrieve information about a Nano account.
 
         Including its balance and representative.
 
@@ -144,10 +133,10 @@ class BasicNanoClient():
             "account": account
         }).json()
 
-    def wallet_info(self, wallet: str) -> Dict[str, Any]:
-        """Retrieves information about a Nano wallet.
+    def wallet_info(self: Self, wallet: str) -> Dict[str, Any]:
+        """Retrieve information about a Nano wallet.
 
-        Parameters:
+        Args:
             wallet (str): The Nano wallet address.
 
         Returns:
@@ -158,10 +147,10 @@ class BasicNanoClient():
             "wallet": wallet
         }).json()
 
-    def ledger(self, account: str, count: int) -> Dict[str, Any]:
-        """Retrieves the transaction history for a Nano account.
+    def ledger(self: Self, account: str, count: int) -> Dict[str, Any]:
+        """Retrieve the transaction history for a Nano account.
 
-        Parameters:
+        Args:
             account (str): The Nano account address.
             count (int): The maximum number of transactions to retrieve.
 
@@ -175,10 +164,10 @@ class BasicNanoClient():
             "count": count
         }).json()
 
-    def wallet_history(self, wallet: str) -> Dict[str, Any]:
-        """Retrieves the transaction history for a Nano wallet.
+    def wallet_history(self: Self, wallet: str) -> Dict[str, Any]:
+        """Retrieve the transaction history for a Nano wallet.
 
-        Parameters:
+        Args:
             wallet (str): The Nano wallet address.
 
         Returns:
@@ -190,10 +179,10 @@ class BasicNanoClient():
             "wallet": wallet
         }).json()
 
-    def account_list(self, wallet: str) -> Dict[str, Any]:
-        """Retrieves a list of Nano accounts associated with a wallet.
+    def account_list(self: Self, wallet: str) -> Dict[str, Any]:
+        """Retrieve a list of Nano accounts associated with a wallet.
 
-        Parameters:
+        Args:
             wallet (str): The Nano wallet address.
 
         Returns:
@@ -205,35 +194,14 @@ class BasicNanoClient():
             "wallet": wallet
         }).json()
 
-    def send(self, wallet: str, source: str, destination: str, amount: int) -> Dict[str, Any]:  # noqa: E501
-        """Sends a specified amount of Nano from one account to another.
-
-        Parameters:
-            wallet (str): The Nano wallet address.
-            source (str): The Nano account address to send from.
-            destination (str): The Nano account address to send to.
-            amount (int): The amount of Nano to send in raw units.
-
-        Returns:
-            A dictionary containing information about the transaction.
-        """
-        return session.post(self.rpc_network, json={
-            "action": "send",
-            "wallet": wallet,
-            "source": source,
-            "destination": destination,
-            "amount": str(amount),
-            "id": str(uuid.uuid5(uuid.NAMESPACE_DNS, 'nanoswap.finance'))
-        }).json()
-
     def receivable(
-            self,
+            self: Self,
             account: str,
             count: int = 1,
-            threshold: int = 1000000000000000000000000) -> Dict[str, Any]:
-        """Retrieves a list of pending Nano transactions for an account.
+            threshold: int = 1) -> Dict[str, Any]:
+        """Retrieve a list of pending Nano transactions for an account.
 
-        Parameters:
+        Args:
             account (str): The Nano account address.
             count (int): The maximum number of transactions to retrieve
                 (default is 1).
@@ -253,15 +221,14 @@ class BasicNanoClient():
         }).json()
 
     def block_create(
-            self,
+            self: Self,
             previous: str,
             account: str,
             representative: str,
             balance: str,
             link: str,
             key: str) -> dict:
-        """
-        Creates a new block.
+        """Create a new block.
 
         Args:
             previous (str): The previous block hash.
@@ -287,17 +254,99 @@ class BasicNanoClient():
             "key": key
         }).json()
 
-    def process(self, block: str) -> dict:
-        """ Processes a block.
+    def process(self: Self, block: str) -> dict:
+        """Process a block.
 
         Args:
             block (str): The block to be processed.
 
         Returns:
-            dict: A dictionary containing information about the block processing.
+            dict: A dictionary containing information about the block.
         """
         response = requests.post(self.rpc_network, json={
             "action": "process",
             "block": block
         })
         return response.json()
+
+    def sign_and_send(
+            self: Self,
+            previous: str,
+            account: str,
+            representative: str,
+            balance: str,
+            link: str,
+            key: str) -> dict:
+        """Sign and send a transaction.
+
+        Args:
+            previous (str): The previous block hash.
+            account (str): The account address.
+            representative (str): The representative address.
+            balance (str): The new account balance.
+            link (str): The link to a previous block.
+            key (str): The account private key.
+
+        Returns:
+            dict: A dictionary containing information
+                about the transaction.
+        """
+        # Create the block
+        block = self.block_create(
+            previous,
+            account,
+            representative,
+            balance,
+            link,
+            key
+        )
+        block_hash = block.get('hash')
+
+        # Process the block
+        response = self.process(block_hash)
+
+        return response
+
+    def send(
+            self: Self,
+            wallet: str,
+            source: str,
+            destination: str,
+            amount: int,
+            key: str) -> Dict[str, Any]:
+        """Send a specified amount of Nano from one account to another.
+
+        Args:
+            wallet (str): The Nano wallet address.
+            source (str): The Nano account address to send from.
+            destination (str): The Nano account address to send to.
+            amount (int): The amount of Nano to send in raw units.
+            key (str): The private key of the account sending the Nano.
+
+        Returns:
+            A dictionary containing information about the transaction.
+        """
+        # Retrieve the wallet info
+        wallet_info = self.wallet_info(wallet)
+        key = wallet_info.get(key)
+
+        # Retrieve the account info
+        account_info = self.account_info(source)
+        previous = account_info.get('frontier')
+        representative = account_info.get('representative')
+
+        # Calculate new balance after sending the amount
+        # Convert balance to int for calculations
+        current_balance = int(account_info.get('balance'))
+        # Subtract amount to be sent and convert back to str
+        new_balance = str(current_balance - amount)
+
+        # Sign and send the transaction
+        return self.sign_and_send(
+            previous,
+            source,
+            representative,
+            new_balance,
+            destination,
+            key
+        )

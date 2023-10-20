@@ -4,6 +4,8 @@ import nox
 @nox.session(python=["python3.11"])
 def build(session: nox.Session) -> None:
     """Build the dist."""
+    session.install("-r", "requirements.txt")
+    session.install("requests")
     session.install("build")
     session.env["PYTHONPATH"] = "basicnanoclient"
     session.run("python", "-m", "build")
@@ -20,7 +22,7 @@ def tests(session: nox.Session) -> None:
     session.install('pytest')
     session.install("pytest-cov")
     session.env["PYTHONPATH"] = "basicnanoclient"
-    session.run("pytest", "--cov=basicnanoclient")
+    session.run("pytest", "--cov=basicnanoclient", "--cov-fail-under=80")
 
 
 @nox.session(python=["python3.11"])

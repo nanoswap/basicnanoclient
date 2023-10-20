@@ -4,9 +4,12 @@ source = ["basicnanoclient", "*/site-packages"]
 [tool.coverage.report]
 show_missing = true
 
+[build-system]
+requires = ["setuptools", "wheel", "requests"]
+
 [project]
 name = "basicnanoclient"
-version = "0.0.5"
+version = "0.1.1"
 description = "Nano RPC python client"
 urls = {'Bug Tracker' = 'https://github.com/nanoswap/basicnanoclient/issues'}
 classifiers = [
