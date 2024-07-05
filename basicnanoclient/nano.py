@@ -133,6 +133,20 @@ class BasicNanoClient():
             "account": account
         }).json()
 
+    def account_key(self: Self, account: str) -> Dict[str, Any]:
+        """Retrieve the public key of a Nano account.
+
+        Args:
+            account (str): The Nano account address.
+
+        Returns:
+            A dictionary with the public key of the Nano account.
+        """
+        return session.post(self.rpc_network, json={
+            "action": "account_key",
+            "account": account
+        }).json()
+
     def wallet_info(self: Self, wallet: str) -> Dict[str, Any]:
         """Retrieve information about a Nano wallet.
 
@@ -218,6 +232,21 @@ class BasicNanoClient():
             "count": count,
             "threshold": threshold,
             "source": "true"
+        }).json()
+
+    def block_info(self: Self, block: str) -> dict:
+        """Retrieve information about a Nano block.
+
+        Args:
+            block (str): The block hash.
+
+        Returns:
+            dict: A dictionary containing information about the block.
+        """
+        return session.post(self.rpc_network, json={
+            "action": "block_info",
+            "json_block": "true",
+            "hash": block
         }).json()
 
     def block_create(
