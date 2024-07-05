@@ -1,12 +1,16 @@
 __package__ = "basicnanoclient"
 
 from typing import Any, Dict, Self
-
+import binascii
 import requests
+import random
+import base64
+import struct
+from nacl.signing import SigningKey, VerifyKey
+from hashlib import blake2b
 
 rpc_network: str = "http://127.0.0.1:17076"
 session: requests.Session = requests.Session()
-
 
 class BasicNanoClient():
     """Nano RPC Client.
@@ -33,15 +37,29 @@ class BasicNanoClient():
             A dictionary with keys 'public' and 'account', where 'public' is a
             64-character hexadecimal string representing
             the Nano public key and 'account' is the Nano account address.
-
-        Raises:
-            requests.exceptions.RequestException: If there is an error sending
-                the RPC request.
         """
-        return session.post(self.rpc_network, json={
-            "action": "key_expand",
-            "key": key
-        }).json()
+        sk = SigningKey(binascii.unhexlify(key))
+        vk = sk.verify_key
+        public_key = binascii.hexlify(vk.encode()).decode()
+        account = self.public_key_to_account(public_key)
+        return {"public": public_key, "account": account}
+
+    def public_key_to_account(self: Self, public_key: str) -> str:
+        """Convert a public key to a Nano account address.
+
+        Args:
+            public_key (str): The public key.
+
+        Returns:
+            str: The Nano account address.
+        """
+        public_key_bytes = binascii.unhexlify(public_key)
+        account_prefix = b'00' + public_key_bytes
+        checksum = blake2b(digest_size=5)
+        checksum.update(account_prefix)
+        checksum_digest = checksum.digest()
+        encoded_key = base64.b32encode(account_prefix + checksum_digest)
+        return "nano_" + encoded_key.decode().replace('=', '')
 
     def wallet_create(self: Self, key: str) -> Dict[str, Any]:
         """Create a new Nano wallet with a given seed (private key).
@@ -54,19 +72,10 @@ class BasicNanoClient():
             A dictionary with keys 'wallet' and 'key', where 'wallet' is the
             Nano wallet ID and 'key' is the seed (private key)
             used to create the wallet.
-
-        Raises:
-            requests.exceptions.RequestException: due to the RPC request.
         """
-        return session.post(self.rpc_network, json={
-            "action": "wallet_create",
-            "seed": key,
-        }).json()
+        return {"wallet": self.key_expand(key)["account"], "key": key}
 
-    def accounts_create(
-            self: Self,
-            wallet: str,
-            count: int = 1) -> Dict[str, Any]:
+    def accounts_create(self: Self, wallet: str, count: int = 1) -> Dict[str, Any]:
         """Create a specified number of new Nano accounts in a given wallet.
 
         Args:
@@ -77,15 +86,12 @@ class BasicNanoClient():
         Returns:
             A dictionary with key 'accounts',
                 where the value is a list of Nano account addresses.
-
-        Raises:
-            requests.exceptions.RequestException: due to the RPC request.
         """
-        return session.post(self.rpc_network, json={
-            "action": "accounts_create",
-            "wallet": wallet,
-            "count": count
-        }).json()
+        accounts = []
+        for _ in range(count):
+            new_key = SigningKey.generate()
+            accounts.append(self.key_expand(binascii.hexlify(new_key.encode()).decode())["account"])
+        return {"accounts": accounts}
 
     def receive(
             self: Self,
@@ -271,23 +277,51 @@ class BasicNanoClient():
             dict: A dictionary containing information
                 about the newly created block.
         """
-        return session.post(self.rpc_network, json={
-            "action": "block_create",
-            "json_block": "true",
+        sk = SigningKey(binascii.unhexlify(key))
+        previous_hash = blake2b(digest_size=32)
+        previous_hash.update(previous.encode())
+        link_hash = blake2b(digest_size=32)
+        link_hash.update(link.encode())
+
+        block = {
             "type": "state",
-            "previous": previous,
             "account": account,
+            "previous": previous,
             "representative": representative,
             "balance": balance,
             "link": link,
-            "key": key
-        }).json()
+            "link_as_account": link,
+            "signature": sk.sign(previous_hash.digest() + link_hash.digest()).signature.hex(),
+            "work": self.generate_work(previous)
+        }
+        return block
 
-    def process(self: Self, block: str) -> dict:
+    def generate_work(self: Self, previous: str) -> str:
+        """Generate work for a Nano block.
+
+        Args:
+            block (str): The block hash.
+
+        Returns:
+            str: The work value.
+        """
+        target = 0xFFFFFFF800000000  # Nano's default threshold
+        nonce = random.getrandbits(64)
+        while True:
+            work = struct.pack('>Q', nonce)
+            h = blake2b(digest_size=8)
+            h.update(work)
+            h.update(binascii.unhexlify(previous))
+            if int.from_bytes(h.digest(), byteorder='big') >= target:
+                break
+            nonce += 1
+        return binascii.hexlify(work).decode()
+
+    def process(self: Self, block: dict) -> dict:
         """Process a block.
 
         Args:
-            block (str): The block to be processed.
+            block (dict): The block to be processed.
 
         Returns:
             dict: A dictionary containing information about the block.
@@ -329,10 +363,9 @@ class BasicNanoClient():
             link,
             key
         )
-        block_hash = block.get('hash')
 
         # Process the block
-        response = self.process(block_hash)
+        response = self.process(block)
 
         return response
 
