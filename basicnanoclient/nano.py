@@ -13,6 +13,7 @@ from hashlib import blake2b
 rpc_network: str = "http://127.0.0.1:17076"
 session: requests.Session = requests.Session()
 
+
 class BasicNanoClient():
     """Nano RPC Client.
 
@@ -64,7 +65,6 @@ class BasicNanoClient():
         Returns:
             str: The Nano account address.
         """
-        # Convert the public key to bytes
         public_key_bytes = binascii.unhexlify(public_key)
 
         # Encode the public key in Nano's base32 format
@@ -88,7 +88,10 @@ class BasicNanoClient():
         """
         base32_alphabet = '13456789abcdefghijkmnopqrstuwxyz'
         bits = ''.join(f'{byte:08b}' for byte in data)
-        result = ''.join(base32_alphabet[int(bits[i:i + 5], 2)] for i in range(0, len(bits), 5))
+        result = ''.join(
+            base32_alphabet[int(bits[i:i + 5], 2)]
+            for i in range(0, len(bits), 5)
+        )
         return result
 
     def derive_account(self: Self, seed: str, index: int) -> Dict[str, Any]:
