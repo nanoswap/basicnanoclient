@@ -6,6 +6,7 @@ import requests
 import random
 import base64
 import struct
+import os
 from nacl.signing import SigningKey, VerifyKey
 from hashlib import blake2b
 
@@ -25,6 +26,16 @@ class BasicNanoClient():
     def __init__(self: Self, rpc_network: str) -> None:
         """Constructor."""
         self.rpc_network = rpc_network
+
+    # Local Functions
+
+    def generate_seed(self: Self) -> str:
+        """Generate a new Nano seed.
+
+        Returns:
+            str: A 64-character hexadecimal string representing the Nano seed.
+        """
+        return binascii.hexlify(os.urandom(32)).decode()
 
     def key_expand(self: Self, key: str) -> Dict[str, Any]:
         """Expand a private key into a public key and account address.
@@ -55,43 +66,112 @@ class BasicNanoClient():
         """
         public_key_bytes = binascii.unhexlify(public_key)
         account_prefix = b'00' + public_key_bytes
-        checksum = blake2b(digest_size=5)
-        checksum.update(account_prefix)
-        checksum_digest = checksum.digest()
-        encoded_key = base64.b32encode(account_prefix + checksum_digest)
-        return "nano_" + encoded_key.decode().replace('=', '')
+        checksum = blake2b(account_prefix, digest_size=5).digest()
+        encoded_key = base64.b32encode(account_prefix).decode().strip('=').replace('0', 'O').replace('1', 'L')
+        encoded_checksum = base64.b32encode(checksum).decode().strip('=').replace('0', 'O').replace('1', 'L')
+        return f"nano_{encoded_key}{encoded_checksum[::-1]}"
 
-    def wallet_create(self: Self, key: str) -> Dict[str, Any]:
-        """Create a new Nano wallet with a given seed (private key).
-
-        Args:
-            key (str): A 64-character hexadecimal string representing the
-                Nano private key.
-
-        Returns:
-            A dictionary with keys 'wallet' and 'key', where 'wallet' is the
-            Nano wallet ID and 'key' is the seed (private key)
-            used to create the wallet.
-        """
-        return {"wallet": self.key_expand(key)["account"], "key": key}
-
-    def accounts_create(self: Self, wallet: str, count: int = 1) -> Dict[str, Any]:
-        """Create a specified number of new Nano accounts in a given wallet.
+    def derive_account(self: Self, seed: str, index: int) -> Dict[str, Any]:
+        """Derive a Nano account from a seed and index.
 
         Args:
-            wallet (str): The Nano wallet ID.
-            count (int): The number of accounts to create in the wallet.
-                Default is 1.
+            seed (str): A 64-character hexadecimal string representing the
+                Nano seed.
+            index (int): The account index.
 
         Returns:
-            A dictionary with key 'accounts',
-                where the value is a list of Nano account addresses.
+            A dictionary with keys 'public' and 'account', where 'public' is a
+            64-character hexadecimal string representing
+            the Nano public key and 'account' is the Nano account address.
         """
-        accounts = []
-        for _ in range(count):
-            new_key = SigningKey.generate()
-            accounts.append(self.key_expand(binascii.hexlify(new_key.encode()).decode())["account"])
-        return {"accounts": accounts}
+        # Generate a 64-byte seed in bytes
+        if len(seed) != 64:
+            raise ValueError("Seed must be a 64-character hexadecimal string")
+
+        seed_bytes = binascii.unhexlify(seed)
+        if len(seed_bytes) != 32:
+            raise ValueError("Seed must be exactly 32 bytes long when unhexlified")
+
+        index_bytes = index.to_bytes(4, 'big')
+        blake2b_hasher = blake2b(digest_size=32)
+        blake2b_hasher.update(seed_bytes)
+        blake2b_hasher.update(index_bytes)
+        private_key = blake2b_hasher.digest()
+
+        sk = SigningKey(private_key)
+        vk = sk.verify_key
+        public_key = binascii.hexlify(vk.encode()).decode()
+        account = self.public_key_to_account(public_key)
+
+        return {
+            "private": binascii.hexlify(private_key).decode(),
+            "public": public_key,
+            "account": account
+        }
+
+    def block_create(
+            self: Self,
+            previous: str,
+            account: str,
+            representative: str,
+            balance: str,
+            link: str,
+            key: str) -> dict:
+        """Create a new block.
+
+        Args:
+            previous (str): The previous block hash.
+            account (str): The account address.
+            representative (str): The representative address.
+            balance (str): The new account balance.
+            link (str): The link to a previous block.
+            key (str): The account private key.
+
+        Returns:
+            dict: A dictionary containing information
+                about the newly created block.
+        """
+        sk = SigningKey(binascii.unhexlify(key))
+        previous_hash = blake2b(digest_size=32)
+        previous_hash.update(previous.encode())
+        link_hash = blake2b(digest_size=32)
+        link_hash.update(link.encode())
+
+        block = {
+            "type": "state",
+            "account": account,
+            "previous": previous,
+            "representative": representative,
+            "balance": balance,
+            "link": link,
+            "link_as_account": link,
+            "signature": sk.sign(previous_hash.digest() + link_hash.digest()).signature.hex(),
+            "work": self.generate_work(previous)
+        }
+        return block
+
+    def generate_work(self: Self, previous: str) -> str:
+        """Generate work for a Nano block.
+
+        Args:
+            block (str): The block hash.
+
+        Returns:
+            str: The work value.
+        """
+        target = 0xFFFFFFF800000000  # Nano's default threshold
+        nonce = random.getrandbits(64)
+        while True:
+            work = struct.pack('>Q', nonce)
+            h = blake2b(digest_size=8)
+            h.update(work)
+            h.update(binascii.unhexlify(previous))
+            if int.from_bytes(h.digest(), byteorder='big') >= target:
+                break
+            nonce += 1
+        return binascii.hexlify(work).decode()
+
+    # RPC Functions
 
     def receive(
             self: Self,
@@ -254,68 +334,6 @@ class BasicNanoClient():
             "json_block": "true",
             "hash": block
         }).json()
-
-    def block_create(
-            self: Self,
-            previous: str,
-            account: str,
-            representative: str,
-            balance: str,
-            link: str,
-            key: str) -> dict:
-        """Create a new block.
-
-        Args:
-            previous (str): The previous block hash.
-            account (str): The account address.
-            representative (str): The representative address.
-            balance (str): The new account balance.
-            link (str): The link to a previous block.
-            key (str): The account private key.
-
-        Returns:
-            dict: A dictionary containing information
-                about the newly created block.
-        """
-        sk = SigningKey(binascii.unhexlify(key))
-        previous_hash = blake2b(digest_size=32)
-        previous_hash.update(previous.encode())
-        link_hash = blake2b(digest_size=32)
-        link_hash.update(link.encode())
-
-        block = {
-            "type": "state",
-            "account": account,
-            "previous": previous,
-            "representative": representative,
-            "balance": balance,
-            "link": link,
-            "link_as_account": link,
-            "signature": sk.sign(previous_hash.digest() + link_hash.digest()).signature.hex(),
-            "work": self.generate_work(previous)
-        }
-        return block
-
-    def generate_work(self: Self, previous: str) -> str:
-        """Generate work for a Nano block.
-
-        Args:
-            block (str): The block hash.
-
-        Returns:
-            str: The work value.
-        """
-        target = 0xFFFFFFF800000000  # Nano's default threshold
-        nonce = random.getrandbits(64)
-        while True:
-            work = struct.pack('>Q', nonce)
-            h = blake2b(digest_size=8)
-            h.update(work)
-            h.update(binascii.unhexlify(previous))
-            if int.from_bytes(h.digest(), byteorder='big') >= target:
-                break
-            nonce += 1
-        return binascii.hexlify(work).decode()
 
     def process(self: Self, block: dict) -> dict:
         """Process a block.
