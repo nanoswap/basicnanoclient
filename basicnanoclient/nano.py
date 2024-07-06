@@ -233,20 +233,6 @@ class BasicNanoClient():
             "account": account
         }).json()
 
-    def wallet_info(self: Self, wallet: str) -> Dict[str, Any]:
-        """Retrieve information about a Nano wallet.
-
-        Args:
-            wallet (str): The Nano wallet address.
-
-        Returns:
-            A dictionary containing information about the Nano wallet.
-        """
-        return session.post(self.rpc_network, json={
-            "action": "wallet_info",
-            "wallet": wallet
-        }).json()
-
     def ledger(self: Self, account: str, count: int) -> Dict[str, Any]:
         """Retrieve the transaction history for a Nano account.
 
@@ -262,36 +248,6 @@ class BasicNanoClient():
             "action": "ledger",
             "account": account,
             "count": count
-        }).json()
-
-    def wallet_history(self: Self, wallet: str) -> Dict[str, Any]:
-        """Retrieve the transaction history for a Nano wallet.
-
-        Args:
-            wallet (str): The Nano wallet address.
-
-        Returns:
-            A dictionary containing the transaction history
-                for the Nano wallet.
-        """
-        return session.post(self.rpc_network, json={
-            "action": "wallet_history",
-            "wallet": wallet
-        }).json()
-
-    def account_list(self: Self, wallet: str) -> Dict[str, Any]:
-        """Retrieve a list of Nano accounts associated with a wallet.
-
-        Args:
-            wallet (str): The Nano wallet address.
-
-        Returns:
-            A dictionary containing a list of Nano accounts
-            associated with the wallet.
-        """
-        return session.post(self.rpc_network, json={
-            "action": "account_list",
-            "wallet": wallet
         }).json()
 
     def receivable(
