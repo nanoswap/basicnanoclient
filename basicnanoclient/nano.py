@@ -64,12 +64,32 @@ class BasicNanoClient():
         Returns:
             str: The Nano account address.
         """
+        # Convert the public key to bytes
         public_key_bytes = binascii.unhexlify(public_key)
-        account_prefix = b'00' + public_key_bytes
-        checksum = blake2b(account_prefix, digest_size=5).digest()
-        encoded_key = base64.b32encode(account_prefix).decode().strip('=').replace('0', 'O').replace('1', 'L')
-        encoded_checksum = base64.b32encode(checksum).decode().strip('=').replace('0', 'O').replace('1', 'L')
-        return f"nano_{encoded_key}{encoded_checksum[::-1]}"
+
+        # Encode the public key in Nano's base32 format
+        account_prefix = 'nano_'
+        account_key = self.encode_nano_base32(public_key_bytes)
+
+        # Compute the checksum
+        checksum = blake2b(public_key_bytes, digest_size=5).digest()
+        checksum = self.encode_nano_base32(checksum[::-1])
+
+        return account_prefix + account_key + checksum
+
+    def encode_nano_base32(self: Self, data: bytes) -> str:
+        """Encode bytes using Nano's base32 alphabet.
+
+        Args:
+            data (bytes): The data to encode.
+
+        Returns:
+            str: The encoded data.
+        """
+        base32_alphabet = '13456789abcdefghijkmnopqrstuwxyz'
+        bits = ''.join(f'{byte:08b}' for byte in data)
+        result = ''.join(base32_alphabet[int(bits[i:i + 5], 2)] for i in range(0, len(bits), 5))
+        return result
 
     def derive_account(self: Self, seed: str, index: int) -> Dict[str, Any]:
         """Derive a Nano account from a seed and index.
