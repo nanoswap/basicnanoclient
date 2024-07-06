@@ -1,5 +1,6 @@
 requests
 setuptools
+pynacl
 
 # for testing
 nox

@@ -28,5 +28,8 @@ setup(
     package_dir={'basicnanoclient': "basicnanoclient"},
     packages=find_packages(exclude=['tests', 'tests.*']),
     python_requires=">=3.11",
-    install_requires=["requests"],
+    install_requires=[
+        "requests",
+        "pynacl"
+    ],
 )
