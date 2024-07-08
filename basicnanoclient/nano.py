@@ -147,9 +147,7 @@ class BasicNanoClient():
         account_bytes_hex = bytes.fromhex(account_bytes_hex)
 
         # Compute the expected checksum
-        computed_checksum = blake2b(account_bytes_hex, digest_size=5).digest()[:5]
-        computed_checksum = bytearray(computed_checksum)
-        computed_checksum.reverse()
+        computed_checksum = blake2b(account_bytes_hex, digest_size=5).digest()
         computed_checksum = self.encode_nano_base32(computed_checksum)
 
         return checksum == computed_checksum
@@ -244,8 +242,6 @@ class BasicNanoClient():
 
         # Compute the checksum
         checksum = blake2b(public_key_bytes, digest_size=5).digest()
-        checksum = bytearray(checksum[:5])  # Convert to byte array for manipulation
-        checksum.reverse()  # Reverse the bytes for Nano checksum
         checksum = self.encode_nano_base32(checksum)
         return f"{account_prefix}{account_key}{checksum}"
 
