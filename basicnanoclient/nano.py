@@ -47,7 +47,7 @@ class BasicNanoClient():
 
         Args:
             h (str): The string to check.
-        
+
         Returns:
             bool: True if the string is a valid hexadecimal string, False otherwise
         """
@@ -56,6 +56,79 @@ class BasicNanoClient():
             return True
         except binascii.Error:
             return False
+
+    def encode_nano_base32(self: Self, data: bytes) -> str:
+        """Encode bytes using Nano's base32 alphabet.
+
+        Args:
+            data (bytes): The data to encode.
+
+        Returns:
+            str: The encoded data.
+        """
+        base32_alphabet = '13456789abcdefghijkmnopqrstuwxyz'
+        bits = ''.join(f'{byte:08b}' for byte in data)
+        result = ''.join(
+            base32_alphabet[int(bits[i:i + 5], 2)]
+            for i in range(0, len(bits), 5)
+        )
+        return result
+
+    def decode_nano_base32(self: Self, data: str) -> bytes:
+        """Decode a Nano base32 encoded string.
+
+        Args:
+            data (str): The encoded data.
+
+        Returns:
+            bytes: The decoded data.
+        """
+        base32_alphabet = '13456789abcdefghijkmnopqrstuwxyz'
+        bits = ''.join(
+            format(base32_alphabet.index(char), '05b')
+            for char in data
+        )
+        result = bytes(int(bits[i:i + 8], 2) for i in range(0, len(bits), 8))
+        return result
+
+    def validate_key_pair(self: Self, private_key: str, public_key: str) -> bool:
+        """Validate that a private key matches a public key.
+
+        Args:
+            private_key (str): The private key in hexadecimal format.
+            public_key (str): The public key in hexadecimal format.
+
+        Returns:
+            bool: True if the key pair is valid, False otherwise.
+        """
+        sk = SigningKey(binascii.unhexlify(private_key))
+        vk = VerifyKey(binascii.unhexlify(public_key))
+        message = b"test message"
+        signed = sk.sign(message)
+        try:
+            vk.verify(signed.message, signed.signature)
+            return True
+        except Exception:
+            return False
+
+    def validate_account(self: Self, account: str) -> bool:
+        """Validate a Nano account address using checksum.
+
+        Args:
+            account (str): The Nano account address.
+
+        Returns:
+            bool: True if the account address is valid, False otherwise.
+        """
+        if not account.startswith("nano_") or len(account) != 65:
+            return False
+
+        account_key = account[5:53]
+        checksum = account[53:]
+        account_bytes = self.decode_nano_base32(account_key)
+        computed_checksum = self.encode_nano_base32(blake2b(account_bytes, digest_size=5).digest()[::-1])
+
+        return checksum == computed_checksum
 
     # Local Functions
 
@@ -139,23 +212,6 @@ class BasicNanoClient():
         checksum = self.encode_nano_base32(checksum[::-1])
 
         return account_prefix + account_key + checksum
-
-    def encode_nano_base32(self: Self, data: bytes) -> str:
-        """Encode bytes using Nano's base32 alphabet.
-
-        Args:
-            data (bytes): The data to encode.
-
-        Returns:
-            str: The encoded data.
-        """
-        base32_alphabet = '13456789abcdefghijkmnopqrstuwxyz'
-        bits = ''.join(f'{byte:08b}' for byte in data)
-        result = ''.join(
-            base32_alphabet[int(bits[i:i + 5], 2)]
-            for i in range(0, len(bits), 5)
-        )
-        return result
 
     def derive_account(self: Self, seed: str, index: int) -> Dict[str, str]:
         """Derive a Nano account from a seed and index.
