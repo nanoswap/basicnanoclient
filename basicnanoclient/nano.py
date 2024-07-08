@@ -28,6 +28,35 @@ class BasicNanoClient():
         """Constructor."""
         self.rpc_network = rpc_network
 
+    # Utils
+
+    def dec_to_hex(self: Self, d: int, n: int) -> str:
+        """Convert a decimal number to a hexadecimal string.
+
+        Args:
+            d (int): The decimal number to convert.
+            n (int): The number of characters in the hexadecimal string.
+
+        Returns:
+            str: The hexadecimal string.
+        """
+        return format(d, "0{}X".format(n*2))
+
+    def is_hex(self: Self, h: str) -> bool:
+        """Check if a string is a valid hexadecimal string.
+
+        Args:
+            h (str): The string to check.
+        
+        Returns:
+            bool: True if the string is a valid hexadecimal string, False otherwise
+        """
+        try:
+            binascii.unhexlify(h)
+            return True
+        except binascii.Error:
+            return False
+
     # Local Functions
 
     def generate_seed(self: Self) -> str:
@@ -55,6 +84,40 @@ class BasicNanoClient():
         public_key = binascii.hexlify(vk.encode()).decode()
         account = self.public_key_to_account(public_key)
         return {"public": public_key, "account": account}
+
+    def generate_account_private_key(self: Self, seed: str, index: int):
+        if len(seed) != 64 or not self.is_hex(seed):
+            raise ValueError("Seed must be a 64-character hexadecimal string")
+
+        if not isinstance(index, int):
+            raise ValueError("Index must be an integer")
+
+        account_bytes = binascii.unhexlify(self.dec_to_hex(index, 4))
+        context = blake2b(digest_size=32)
+        context.update(binascii.unhexlify(seed))
+        context.update(account_bytes)
+
+        new_key = context.hexdigest()
+        return new_key
+
+    def generate_account_key_pair(self: Self, seed: str, index: int) -> Dict[str, str]:
+        """Generate a new account key pair from a seed and index.
+
+        Args:
+            seed (str): A 64-character hexadecimal string representing the
+                Nano seed.
+            index (int): The account index.
+
+        Returns:
+            AccountKeyPair: The account key pair.
+        """
+        private_key = self.generate_account_private_key(seed, index)
+        public_key = self.key_expand(private_key)["public"]
+
+        return {
+            "private": private_key,
+            "public": public_key
+        }
 
     def public_key_to_account(self: Self, public_key: str) -> str:
         """Convert a public key to a Nano account address.
@@ -94,7 +157,7 @@ class BasicNanoClient():
         )
         return result
 
-    def derive_account(self: Self, seed: str, index: int) -> Dict[str, Any]:
+    def derive_account(self: Self, seed: str, index: int) -> Dict[str, str]:
         """Derive a Nano account from a seed and index.
 
         Args:
@@ -107,7 +170,6 @@ class BasicNanoClient():
             64-character hexadecimal string representing
             the Nano public key and 'account' is the Nano account address.
         """
-        # Generate a 64-byte seed in bytes
         if len(seed) != 64:
             raise ValueError("Seed must be a 64-character hexadecimal string")
 
@@ -115,20 +177,12 @@ class BasicNanoClient():
         if len(seed_bytes) != 32:
             raise ValueError("Seed must be exactly 32 bytes long when unhexlified")
 
-        index_bytes = index.to_bytes(4, 'big')
-        blake2b_hasher = blake2b(digest_size=32)
-        blake2b_hasher.update(seed_bytes)
-        blake2b_hasher.update(index_bytes)
-        private_key = blake2b_hasher.digest()
-
-        sk = SigningKey(private_key)
-        vk = sk.verify_key
-        public_key = binascii.hexlify(vk.encode()).decode()
-        account = self.public_key_to_account(public_key)
+        key_pair = self.generate_account_key_pair(seed, index)
+        account = self.public_key_to_account(key_pair["public"])
 
         return {
-            "private": binascii.hexlify(private_key).decode(),
-            "public": public_key,
+            "private": key_pair["private"],
+            "public": key_pair["public"],
             "account": account
         }
 
@@ -139,7 +193,7 @@ class BasicNanoClient():
             representative: str,
             balance: str,
             link: str,
-            key: str) -> dict:
+            key: str) -> Dict[str, Any]:
         """Create a new block.
 
         Args:
