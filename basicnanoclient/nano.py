@@ -68,6 +68,8 @@ class BasicNanoClient():
         """
         base32_alphabet = '13456789abcdefghijkmnopqrstuwxyz'
         bits = ''.join(f'{byte:08b}' for byte in data)
+        # Pad bits to be a multiple of 5
+        bits = bits + '0' * ((5 - len(bits) % 5) % 5)
         result = ''.join(
             base32_alphabet[int(bits[i:i + 5], 2)]
             for i in range(0, len(bits), 5)
@@ -88,6 +90,8 @@ class BasicNanoClient():
             format(base32_alphabet.index(char), '05b')
             for char in data
         )
+        padding_length = (8 - len(bits) % 8) % 8
+        bits = bits[:-padding_length] if padding_length else bits
         result = bytes(int(bits[i:i + 8], 2) for i in range(0, len(bits), 8))
         return result
 
@@ -159,6 +163,17 @@ class BasicNanoClient():
         return {"public": public_key, "account": account}
 
     def generate_account_private_key(self: Self, seed: str, index: int):
+        """Generate a new account private key from a seed and index.
+
+        Args:
+            seed (str): A 64-character hexadecimal string representing the
+                Nano seed.
+            index (int): The account index.
+
+        Returns:
+            str: A 64-character hexadecimal string representing the
+                Nano private key.
+        """
         if len(seed) != 64 or not self.is_hex(seed):
             raise ValueError("Seed must be a 64-character hexadecimal string")
 
