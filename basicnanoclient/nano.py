@@ -121,13 +121,36 @@ class BasicNanoClient():
         Returns:
             bool: True if the account address is valid, False otherwise.
         """
-        if not account.startswith("nano_") or len(account) != 65:
+        if len(account) != 64 and len(account) != 65:
             return False
 
-        account_key = account[5:53]
-        checksum = account[53:]
+        xrb_prefix = account.startswith("xrb_") and len(account) == 64
+        nano_prefix = account.startswith("nano_") and len(account) == 65
+        node_prefix = account.startswith("node_") and len(account) == 65
+
+        if not (xrb_prefix or nano_prefix or node_prefix):
+            return False
+
+        # Determine start/end indices for account_key and checksum
+        prefix_length = 4 if xrb_prefix else 5
+        account_key_end = prefix_length + 52
+        checksum_start = account_key_end
+
+        account_key = account[prefix_length:account_key_end]
+        checksum = account[checksum_start:]
+
+        # Decode account key from Nano base32
         account_bytes = self.decode_nano_base32(account_key)
-        computed_checksum = self.encode_nano_base32(blake2b(account_bytes, digest_size=5).digest()[::-1])
+
+        # Convert account bytes to hex for Blake2b
+        account_bytes_hex = binascii.hexlify(account_bytes).decode()
+        account_bytes_hex = bytes.fromhex(account_bytes_hex)
+
+        # Compute the expected checksum
+        computed_checksum = blake2b(account_bytes_hex, digest_size=5).digest()[:5]
+        computed_checksum = bytearray(computed_checksum)
+        computed_checksum.reverse()
+        computed_checksum = self.encode_nano_base32(computed_checksum)
 
         return checksum == computed_checksum
 
@@ -221,9 +244,10 @@ class BasicNanoClient():
 
         # Compute the checksum
         checksum = blake2b(public_key_bytes, digest_size=5).digest()
-        checksum = self.encode_nano_base32(checksum[::-1])
-
-        return account_prefix + account_key + checksum
+        checksum = bytearray(checksum[:5])  # Convert to byte array for manipulation
+        checksum.reverse()  # Reverse the bytes for Nano checksum
+        checksum = self.encode_nano_base32(checksum)
+        return f"{account_prefix}{account_key}{checksum}"
 
     def derive_account(self: Self, seed: str, index: int) -> Dict[str, str]:
         """Derive a Nano account from a seed and index.
