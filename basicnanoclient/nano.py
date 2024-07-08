@@ -7,12 +7,26 @@ import random
 import base64
 import struct
 import os
+import hashlib
+import sys
 from nacl.signing import SigningKey, VerifyKey
 from hashlib import blake2b
 
 rpc_network: str = "http://127.0.0.1:17076"
 session: requests.Session = requests.Session()
 
+class uint256_t(int):
+    def __new__(cls, value):
+        return super().__new__(cls, value % 2**256)
+
+class uint256_union:
+    def __init__(self, bytes):
+        self.bytes = bytes
+
+    def number(self):
+        # Assuming self.bytes is a bytes object of length 32 (similar to C++ uint256_t)
+        result = int.from_bytes(self.bytes, byteorder=sys.byteorder)
+        return uint256_t(result)
 
 class BasicNanoClient():
     """Nano RPC Client.
@@ -112,6 +126,80 @@ class BasicNanoClient():
         except Exception:
             return False
 
+    def number(self, seed_bytes: bytes):
+        return uint256_union(seed_bytes).number()
+
+    def account_encode(self, value):
+        account_lookup = "13456789abcdefghijkmnopqrstuwxyz"
+        assert value < 32
+        result = account_lookup[value]
+        return result
+
+    def account_decode(self, value):
+        account_reverse = "~0~1234567~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~89:;<=>?@AB~CDEFGHIJK~LMNO~~~~~"
+        assert ord(value) >= ord('0')
+        assert ord(value) <= ord('~')
+        result = account_reverse[ord(value) - 0x30]
+        if result != '~':
+            result = ord(result) - 0x30
+        return result
+    
+    def encode_account(self: Self, seed_bytes: bytes):
+        assert len(seed_bytes) == 32  # Assuming bytes is of length 32 (similar to C++ uint256_t)
+        
+        destination_a = ""
+        check = 0
+        hash = hashlib.blake2b(digest_size=5)
+        hash.update(seed_bytes)
+        check = int.from_bytes(hash.digest(), byteorder='big')  # Ensure correct endianess
+        
+        number_l = self.number(seed_bytes) << 40 | check
+        for i in range(60):
+            r = number_l & 0x1f
+            number_l >>= 5
+            destination_a += self.account_encode(r)
+        
+        destination_a += "_onan"  # nano_
+        destination_a = destination_a[::-1]  # Reverse the string
+        
+        return destination_a
+
+    def decode_account(self, source_a):
+        error = len(source_a) < 5
+        if not error:
+            xrb_prefix = source_a[0] == 'x' and source_a[1] == 'r' and source_a[2] == 'b' and (source_a[3] == '_' or source_a[3] == '-')
+            nano_prefix = source_a[0] == 'n' and source_a[1] == 'a' and source_a[2] == 'n' and source_a[3] == 'o' and (source_a[4] == '_' or source_a[4] == '-')
+            node_id_prefix = source_a[0] == 'n' and source_a[1] == 'o' and source_a[2] == 'd' and source_a[3] == 'e' and source_a[4] == '_'
+            error = (xrb_prefix and len(source_a) != 64) or (nano_prefix and len(source_a) != 65)
+            if not error:
+                if xrb_prefix or nano_prefix or node_id_prefix:
+                    i = 4 if xrb_prefix else 5
+                    if source_a[i] == '1' or source_a[i] == '3':
+                        number_l = 0
+                        for char in source_a[i:]:
+                            character = ord(char)
+                            error = character < 0x30 or character >= 0x80
+                            if not error:
+                                byte = self.account_decode(char)
+                                error = byte == '~'
+                                if not error:
+                                    number_l <<= 5
+                                    number_l += byte
+                        if not error:
+                            temp = number_l >> 40
+                            check = number_l & 0xffffffffff
+                            validation = 0
+                            hash = blake2b(digest_size=5)
+                            hash.update(temp.to_bytes(32, 'big'))
+                            validation = int.from_bytes(hash.digest(), 'big')
+                            error = check != validation
+                    else:
+                        error = True
+                else:
+                    error = True
+        return error
+
+
     def validate_account(self: Self, account: str) -> bool:
         """Validate a Nano account address using checksum.
 
@@ -121,36 +209,37 @@ class BasicNanoClient():
         Returns:
             bool: True if the account address is valid, False otherwise.
         """
-        if len(account) != 64 and len(account) != 65:
-            return False
+        # if len(account) != 64 and len(account) != 65:
+        #     return False
 
-        xrb_prefix = account.startswith("xrb_") and len(account) == 64
-        nano_prefix = account.startswith("nano_") and len(account) == 65
-        node_prefix = account.startswith("node_") and len(account) == 65
+        # xrb_prefix = account.startswith("xrb_") and len(account) == 64
+        # nano_prefix = account.startswith("nano_") and len(account) == 65
+        # node_prefix = account.startswith("node_") and len(account) == 65
 
-        if not (xrb_prefix or nano_prefix or node_prefix):
-            return False
+        # if not (xrb_prefix or nano_prefix or node_prefix):
+        #     return False
 
-        # Determine start/end indices for account_key and checksum
-        prefix_length = 4 if xrb_prefix else 5
-        account_key_end = prefix_length + 52
-        checksum_start = account_key_end
+        # # Determine start/end indices for account_key and checksum
+        # prefix_length = 4 if xrb_prefix else 5
+        # account_key_end = prefix_length + 52
+        # checksum_start = account_key_end
 
-        account_key = account[prefix_length:account_key_end]
-        checksum = account[checksum_start:]
+        # account_key = account[prefix_length:account_key_end]
+        # checksum = account[checksum_start:]
 
-        # Decode account key from Nano base32
-        account_bytes = self.decode_nano_base32(account_key)
+        # # Decode account key from Nano base32
+        # account_bytes = self.decode_nano_base32(account_key)
 
-        # Convert account bytes to hex for Blake2b
-        account_bytes_hex = binascii.hexlify(account_bytes).decode()
-        account_bytes_hex = bytes.fromhex(account_bytes_hex)
+        # # Convert account bytes to hex for Blake2b
+        # account_bytes_hex = binascii.hexlify(account_bytes).decode()
+        # account_bytes_hex = bytes.fromhex(account_bytes_hex)
 
-        # Compute the expected checksum
-        computed_checksum = blake2b(account_bytes_hex, digest_size=5).digest()
-        computed_checksum = self.encode_nano_base32(computed_checksum)
+        # # Compute the expected checksum
+        # computed_checksum = blake2b(account_bytes_hex, digest_size=5).digest()
+        # computed_checksum = self.encode_nano_base32(computed_checksum)
 
-        return checksum == computed_checksum
+        # return checksum == computed_checksum
+        return not self.decode_account(account)
 
     # Local Functions
 
@@ -266,7 +355,7 @@ class BasicNanoClient():
             raise ValueError("Seed must be exactly 32 bytes long when unhexlified")
 
         key_pair = self.generate_account_key_pair(seed, index)
-        account = self.public_key_to_account(key_pair["public"])
+        account = self.encode_account(seed_bytes)
 
         return {
             "private": key_pair["private"],
