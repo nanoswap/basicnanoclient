@@ -69,11 +69,9 @@ class BasicNanoClient():
         base32_alphabet = '13456789abcdefghijkmnopqrstuwxyz'
         bits = ''.join(f'{byte:08b}' for byte in data)
         # Pad bits to be a multiple of 5
-        bits = bits + '0' * ((5 - len(bits) % 5) % 5)
-        result = ''.join(
-            base32_alphabet[int(bits[i:i + 5], 2)]
-            for i in range(0, len(bits), 5)
-        )
+        padding = (5 - len(bits) % 5) % 5
+        bits = bits + '0' * padding
+        result = ''.join(base32_alphabet[int(bits[i:i + 5], 2)] for i in range(0, len(bits), 5))
         return result
 
     def decode_nano_base32(self: Self, data: str) -> bytes:
@@ -86,10 +84,9 @@ class BasicNanoClient():
             bytes: The decoded data.
         """
         base32_alphabet = '13456789abcdefghijkmnopqrstuwxyz'
-        bits = ''.join(
-            format(base32_alphabet.index(char), '05b')
-            for char in data
-        )
+        base32_table = {char: i for i, char in enumerate(base32_alphabet)}
+        bits = ''.join(f'{base32_table[char]:05b}' for char in data)
+        # Remove padding bits added during encoding
         padding_length = (8 - len(bits) % 8) % 8
         bits = bits[:-padding_length] if padding_length else bits
         result = bytes(int(bits[i:i + 8], 2) for i in range(0, len(bits), 8))

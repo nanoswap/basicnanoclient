@@ -11,16 +11,16 @@ class TestBasicNanoClient(unittest.TestCase):
 
     def test_encode_nano_base32(self):
         """Test encode_nano_base32 method."""
-        data = binascii.unhexlify('4C9EF365D1F62A36BC0C352B74DB9619B7D1E5745263D0A2C9C9053D9F07A0FF')
+        data = b'I\x10\xd0 i'
         encoded = self.client.encode_nano_base32(data)
-        expected_encoded = 'kqte7wzwnrcckndzqms3x7nbhwzojw5fejf6q8rgonqncwzcpjpo'
+        expected_encoded = 'b6af1a5b'
         self.assertEqual(encoded, expected_encoded)
 
     def test_decode_nano_base32(self):
         """Test decode_nano_base32 method."""
-        encoded = 'kqte7wzwnrcckndzqms3x7nbhwzojw5fejf6q8rgonqncwzcpjpo'
+        encoded = 'b6af1a5b'
         decoded = self.client.decode_nano_base32(encoded)
-        expected_decoded = binascii.unhexlify('4C9EF365D1F62A36BC0C352B74DB9619B7D1E5745263D0A2C9C9053D9F07A0FF')
+        expected_decoded = b'I\x10\xd0 i'
         self.assertEqual(decoded, expected_decoded)
 
     def test_public_key_to_account(self):
