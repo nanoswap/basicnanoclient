@@ -3,4 +3,4 @@ __package__ = "basicnanoclient"
 
 from basicnanoclient import rpc, wallet, utils
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"

@@ -14,7 +14,7 @@ setup(
     version=__version__,
     author="Nathaniel Schultz",
     author_email="nate@nanoswap.finance",
-    description="Nano Cryptocurrency RPC Client",
+    description="Nano Cryptocurrency RPC Client and Client Side Wallet",
     long_description=load_long_description("README.md"),
     long_description_content_type="text/markdown",
     url="https://github.com/nanoswap/basicnanoclient",

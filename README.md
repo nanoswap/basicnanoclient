@@ -1,6 +1,6 @@
 # basicnanoclient
 
-A nano (XNO) cryptocurrency RPC python client
+A nano (XNO) cryptocurrency RPC python client and client side wallet
 
 ![](https://img.shields.io/readthedocs/nanoclient?label=readthedocs)
 ![](https://img.shields.io/github/actions/workflow/status/nanoswap/nanoclient/test.yml?label=tests)

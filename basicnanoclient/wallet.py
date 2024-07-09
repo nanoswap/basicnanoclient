@@ -48,6 +48,17 @@ class Wallet():
             for account in self.accounts
         )
 
+    def validate_key_pairs(self: Self) -> bool:
+        """Validate the key pairs in the wallet.
+
+        Returns:
+            bool: True if all key pairs are valid, False otherwise.
+        """
+        return all(
+            self.validate_key_pair(account["private"], account["public"])
+            for account in self.accounts
+        )
+
     def validate_key_pair(self: Self, private_key: str, public_key: str) -> bool:
         """Validate that a private key matches a public key.
 
@@ -133,44 +144,44 @@ class Wallet():
         Returns:
             bool: True if the account address is valid, False otherwise.
         """
-        # if len(account) != 64 and len(account) != 65:
-        #     return False
+        if len(account) != 64 and len(account) != 65:
+            return False
 
-        # xrb_prefix = account.startswith("xrb_") and len(account) == 64
-        # nano_prefix = account.startswith("nano_") and len(account) == 65
-        # node_prefix = account.startswith("node_") and len(account) == 65
+        xrb_prefix = account.startswith("xrb_") and len(account) == 64
+        nano_prefix = account.startswith("nano_") and len(account) == 65
+        node_prefix = account.startswith("node_") and len(account) == 65
 
-        # if not (xrb_prefix or nano_prefix or node_prefix):
-        #     return False
+        if not (xrb_prefix or nano_prefix or node_prefix):
+            return False
 
-        # # Determine start/end indices for account_key and checksum
-        # prefix_length = 4 if xrb_prefix else 5
-        # account_key_end = prefix_length + 52
-        # checksum_start = account_key_end
+        # Determine start/end indices for account_key and checksum
+        prefix_length = 4 if xrb_prefix else 5
+        account_key_end = prefix_length + 52
+        checksum_start = account_key_end
 
-        # account_key = account[prefix_length:account_key_end]
-        # checksum = account[checksum_start:]
+        account_key = account[prefix_length:account_key_end]
+        checksum = account[checksum_start:]
 
-        # # Decode account key from Nano base32
-        # account_bytes = self.decode_nano_base32(account_key)
+        # Decode account key from Nano base32
+        account_bytes = self.decode_nano_base32(account_key)
 
-        # # Convert account bytes to hex for Blake2b
-        # account_bytes_hex = binascii.hexlify(account_bytes).decode()
-        # account_bytes_hex = bytes.fromhex(account_bytes_hex)
+        # Convert account bytes to hex for Blake2b
+        account_bytes_hex = binascii.hexlify(account_bytes).decode()
+        account_bytes_hex = bytes.fromhex(account_bytes_hex)
 
-        # # Compute the expected checksum
-        # computed_checksum = blake2b(account_bytes_hex, digest_size=5).digest()
-        # computed_checksum = self.encode_nano_base32(computed_checksum)
+        # Compute the expected checksum
+        computed_checksum = blake2b(account_bytes_hex, digest_size=5).digest()
+        computed_checksum = self.encode_nano_base32(computed_checksum)
 
-        # return checksum == computed_checksum
-        # return not self.decode_account(account)
-        prefix_length = 5  # 'nano_' prefix
-        account_key = account[prefix_length:prefix_length + 52]
-        checksum = account[prefix_length + 52:]
-        account_bytes = Utils.decode_nano_base32(account_key)
-        computed_checksum = blake2b(account_bytes, digest_size=5).digest()
-        computed_checksum = Utils.encode_nano_base32(computed_checksum[::-1])
         return checksum == computed_checksum
+        # return not self.decode_account(account)
+        # prefix_length = 5  # 'nano_' prefix
+        # account_key = account[prefix_length:prefix_length + 52]
+        # checksum = account[prefix_length + 52:]
+        # account_bytes = Utils.decode_nano_base32(account_key)
+        # computed_checksum = blake2b(account_bytes, digest_size=5).digest()
+        # computed_checksum = Utils.encode_nano_base32(computed_checksum[::-1])
+        # return checksum == computed_checksum
 
     def key_expand(self: Self, key: str) -> Dict[str, Any]:
         """Expand a private key into a public key and account address.
