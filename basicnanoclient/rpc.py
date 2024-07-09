@@ -13,6 +13,8 @@ from nacl.signing import SigningKey, VerifyKey
 from nacl.encoding import RawEncoder
 from hashlib import blake2b
 
+from .wallet import Wallet
+
 rpc_network: str = "http://127.0.0.1:17076"
 session: requests.Session = requests.Session()
 
@@ -29,31 +31,6 @@ class RPC():
     def __init__(self: Self, rpc_network: str) -> None:
         """Constructor."""
         self.rpc_network = rpc_network
-
-    def receive(
-            self: Self,
-            wallet: str,
-            account: str,
-            block: str) -> Dict[str, Any]:
-        """Receives a pending Nano block and adds it to the wallet's balance.
-
-        Args:
-            wallet (str): The Nano wallet ID.
-            account (str): The Nano account address.
-            block (str): A Nano block hash.
-
-        Returns:
-            A dictionary representing the received block.
-
-        Raises:
-            requests.exceptions.RequestException: due to the RPC request.
-        """
-        return session.post(self.rpc_network, json={
-            "action": "receive",
-            "wallet": wallet,
-            "account": account,
-            "block": block
-        }).json()
 
     def account_info(self: Self, account: str) -> Dict[str, Any]:
         """Retrieve information about a Nano account.
@@ -134,7 +111,7 @@ class RPC():
             "hash": block
         }).json()
 
-    def process(self: Self, block: dict) -> dict:
+    def process(self: Self, block: dict, sub_type: str = "send") -> dict:
         """Process a block.
 
         Args:
@@ -145,18 +122,21 @@ class RPC():
         """
         response = requests.post(self.rpc_network, json={
             "action": "process",
+            "json_block": "true",
+            "sub_type": sub_type,
             "block": block
         })
         return response.json()
 
-    def sign_and_send(
+    def sign_and_process(
             self: Self,
             previous: str,
             account: str,
             representative: str,
             balance: str,
             link: str,
-            key: str) -> dict:
+            key: str,
+            subtype: str) -> dict:
         """Sign and send a transaction.
 
         Args:
@@ -166,13 +146,14 @@ class RPC():
             balance (str): The new account balance.
             link (str): The link to a previous block.
             key (str): The account private key.
+            subtype (str): The type of transaction.
 
         Returns:
             dict: A dictionary containing information
                 about the transaction.
         """
         # Create the block
-        block = self.block_create(
+        block = Wallet.block_create(
             previous,
             account,
             representative,
@@ -182,7 +163,7 @@ class RPC():
         )
 
         # Process the block
-        response = self.process(block)
+        response = self.process(block, subtype)
 
         return response
 

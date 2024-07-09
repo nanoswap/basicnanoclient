@@ -158,8 +158,8 @@ class Wallet():
         account = f"nano_{encoded_public_key}{encoded_checksum}"
         return account
 
+    @staticmethod
     def block_create(
-            self: Self,
             previous: str,
             account: str,
             representative: str,
@@ -195,11 +195,12 @@ class Wallet():
             "link": link,
             "link_as_account": link,
             "signature": sk.sign(previous_hash.digest() + link_hash.digest()).signature.hex(),
-            "work": self.generate_work(previous)
+            "work": Wallet.generate_work(previous)
         }
         return block
 
-    def generate_work(self: Self, previous: str) -> str:
+    @staticmethod
+    def generate_work(previous: str) -> str:
         """Generate work for a Nano block.
 
         Args:
@@ -208,7 +209,7 @@ class Wallet():
         Returns:
             str: The work value.
         """
-        target = 0xFFFFFFF800000000  # Nano's default threshold
+        target = 0xfffffff93c41ec94  # Nano's default threshold
         nonce = random.getrandbits(64)
         while True:
             work = struct.pack('>Q', nonce)
