@@ -35,7 +35,7 @@ class Wallet():
         self.accounts = []
         if seed:
             for i in range(account_count):
-                self.accounts.append(self.derive_account(seed, i))
+                self.accounts.append(self.generate_account_key_pair(seed, i))
 
     def validate_accounts(self: Self) -> bool:
         """Validate the accounts in the wallet.
@@ -78,61 +78,6 @@ class Wallet():
             return True
         except Exception:
             return False
-    
-    def encode_account(self: Self, seed_bytes: bytes):
-        assert len(seed_bytes) == 32  # Assuming bytes is of length 32 (similar to C++ uint256_t)
-        
-        destination_a = ""
-        check = 0
-        hash = hashlib.blake2b(digest_size=5)
-        hash.update(seed_bytes)
-        check = int.from_bytes(hash.digest(), byteorder='big')  # Ensure correct endianess
-        
-        number_l = self.number(seed_bytes) << 40 | check
-        for i in range(60):
-            r = number_l & 0x1f
-            number_l >>= 5
-            destination_a += self.account_encode(r)
-        
-        destination_a += "_onan"  # nano_
-        destination_a = destination_a[::-1]  # Reverse the string
-        
-        return destination_a
-
-    def decode_account(self, source_a):
-        error = len(source_a) < 5
-        if not error:
-            xrb_prefix = source_a[0] == 'x' and source_a[1] == 'r' and source_a[2] == 'b' and (source_a[3] == '_' or source_a[3] == '-')
-            nano_prefix = source_a[0] == 'n' and source_a[1] == 'a' and source_a[2] == 'n' and source_a[3] == 'o' and (source_a[4] == '_' or source_a[4] == '-')
-            node_id_prefix = source_a[0] == 'n' and source_a[1] == 'o' and source_a[2] == 'd' and source_a[3] == 'e' and source_a[4] == '_'
-            error = (xrb_prefix and len(source_a) != 64) or (nano_prefix and len(source_a) != 65)
-            if not error:
-                if xrb_prefix or nano_prefix or node_id_prefix:
-                    i = 4 if xrb_prefix else 5
-                    if source_a[i] == '1' or source_a[i] == '3':
-                        number_l = 0
-                        for char in source_a[i:]:
-                            character = ord(char)
-                            error = character < 0x30 or character >= 0x80
-                            if not error:
-                                byte = self.account_decode(char)
-                                error = byte == '~'
-                                if not error:
-                                    number_l <<= 5
-                                    number_l += byte
-                        if not error:
-                            temp = number_l >> 40
-                            check = number_l & 0xffffffffff
-                            validation = 0
-                            hash = blake2b(digest_size=5)
-                            hash.update(temp.to_bytes(32, 'big'))
-                            validation = int.from_bytes(hash.digest(), 'big')
-                            error = check != validation
-                    else:
-                        error = True
-                else:
-                    error = True
-        return error
 
     def validate_account(self: Self, account: str) -> bool:
         """Validate a Nano account address using checksum.
@@ -143,44 +88,28 @@ class Wallet():
         Returns:
             bool: True if the account address is valid, False otherwise.
         """
-        if len(account) != 64 and len(account) != 65:
+        if not account.startswith("nano_"):
             return False
 
-        xrb_prefix = account.startswith("xrb_") and len(account) == 64
-        nano_prefix = account.startswith("nano_") and len(account) == 65
-        node_prefix = account.startswith("node_") and len(account) == 65
-
-        if not (xrb_prefix or nano_prefix or node_prefix):
+        account_part = account[5:]
+        if len(account_part) != 60:
             return False
 
-        # Determine start/end indices for account_key and checksum
-        prefix_length = 4 if xrb_prefix else 5
-        account_key_end = prefix_length + 52
-        checksum_start = account_key_end
+        # Extract checksum and public key part
+        account_base32 = account_part[:-8]
+        checksum_base32 = account_part[-8:]
+        print(account_base32, checksum_base32)
 
-        account_key = account[prefix_length:account_key_end]
-        checksum = account[checksum_start:]
+        try:
+            public_key_bytes = Utils.decode_nano_base32(account_base32)
+            extracted_checksum_bytes = Utils.decode_nano_base32(checksum_base32)
+        except ValueError:
+            return False
 
-        # Decode account key from Nano base32
-        account_bytes = self.decode_nano_base32(account_key)
+        # Calculate checksum
+        calculated_checksum = blake2b(public_key_bytes, digest_size=5).digest()[::-1]
 
-        # Convert account bytes to hex for Blake2b
-        account_bytes_hex = binascii.hexlify(account_bytes).decode()
-        account_bytes_hex = bytes.fromhex(account_bytes_hex)
-
-        # Compute the expected checksum
-        computed_checksum = blake2b(account_bytes_hex, digest_size=5).digest()
-        computed_checksum = self.encode_nano_base32(computed_checksum)
-
-        return checksum == computed_checksum
-        # return not self.decode_account(account)
-        # prefix_length = 5  # 'nano_' prefix
-        # account_key = account[prefix_length:prefix_length + 52]
-        # checksum = account[prefix_length + 52:]
-        # account_bytes = Utils.decode_nano_base32(account_key)
-        # computed_checksum = blake2b(account_bytes, digest_size=5).digest()
-        # computed_checksum = Utils.encode_nano_base32(computed_checksum[::-1])
-        # return checksum == computed_checksum
+        return extracted_checksum_bytes == calculated_checksum
 
     def key_expand(self: Self, key: str) -> Dict[str, Any]:
         """Expand a private key into a public key and account address.
@@ -238,11 +167,12 @@ class Wallet():
             AccountKeyPair: The account key pair.
         """
         private_key = self.generate_account_private_key(seed, index)
-        public_key = self.key_expand(private_key)["public"]
+        keys = self.key_expand(private_key)
 
         return {
             "private": private_key,
-            "public": public_key
+            "public": keys["public"],
+            "account": keys["account"]
         }
 
     def public_key_to_account(self: Self, public_key: str) -> str:
@@ -254,66 +184,21 @@ class Wallet():
         Returns:
             str: The Nano account address.
         """
-        public_key_bytes = binascii.unhexlify(public_key)
+        if len(public_key) != 32:
+            raise ValueError("Public key must be 32 bytes.")
 
-        # Encode the public key in Nano's base32 format
-        account_prefix = 'nano_'
-        account_key = self.encode_nano_base32(public_key_bytes)
+        # Encode public key
+        encoded_public_key = Utils.encode_nano_base32(public_key)
 
-        # Compute the checksum
-        checksum = blake2b(public_key_bytes, digest_size=5).digest()
-        checksum = self.encode_nano_base32(checksum)
-        return f"{account_prefix}{account_key}{checksum}"
+        # Calculate checksum
+        checksum = blake2b(public_key, digest_size=5).digest()[::-1]
+        encoded_checksum = Utils.encode_nano_base32(checksum)
 
-        # Verify the public key length (should be 32 bytes for Nano)
-        # if len(public_key) != 32:
-        #     raise ValueError("Public key must be 32 bytes long.")
+        # Form the account address
+        print(encoded_public_key, encoded_checksum)
+        account = f"nano_{encoded_public_key}{encoded_checksum}"
 
-        # # Step 1: Encode the public key using Nano's base32 encoding
-        # encoded_public_key = self.encode_nano_base32(public_key)
-
-        # # Step 2: Compute the checksum (first 5 bytes of the blake2b hash of the public key in reverse order)
-        # checksum = hashlib.blake2b(public_key, digest_size=5).digest()
-        # reversed_checksum = checksum[::-1]  # Reverse the checksum
-        # encoded_checksum = self.encode_nano_base32(reversed_checksum)
-
-        # # Step 3: Combine the encoded public key and the checksum to form the address
-        # nano_address = f"nano_{encoded_public_key}{encoded_checksum}"
-        
-        # return nano_address
-
-    def derive_account(self: Self, seed: str, index: int) -> Dict[str, str]:
-        """Derive a Nano account from a seed and index.
-
-        Args:
-            seed (str): A 64-character hexadecimal string representing the
-                Nano seed.
-            index (int): The account index.
-
-        Returns:
-            A dictionary with keys 'public' and 'account', where 'public' is a
-            64-character hexadecimal string representing
-            the Nano public key and 'account' is the Nano account address.
-        """
-        if len(seed) != 64:
-            raise ValueError("Seed must be a 64-character hexadecimal string")
-
-        seed_bytes = binascii.unhexlify(seed)
-        if len(seed_bytes) != 32:
-            raise ValueError("Seed must be exactly 32 bytes long when unhexlified")
-
-        key_pair = self.generate_account_key_pair(seed, index)
-
-        # get account from public key
-        # public_key_bytes = binascii.unhexlify(key_pair["public"])
-        # account = self.public_key_to_account(public_key_bytes)
-        key = self.key_expand(key_pair["private"])
-
-        return {
-            "private": key_pair["private"],
-            "public": key["public"],
-            "account": key["account"]
-        }
+        return account
 
     def block_create(
             self: Self,
