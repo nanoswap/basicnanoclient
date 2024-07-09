@@ -98,7 +98,6 @@ class Wallet():
         # Extract checksum and public key part
         account_base32 = account_part[:-8]
         checksum_base32 = account_part[-8:]
-        print(account_base32, checksum_base32)
 
         try:
             public_key_bytes = Utils.decode_nano_base32(account_base32)
@@ -108,6 +107,13 @@ class Wallet():
 
         # Calculate checksum
         calculated_checksum = blake2b(public_key_bytes, digest_size=5).digest()[::-1]
+
+        # Debugging prints
+        print(f"Account Base32: {account_base32}")
+        print(f"Checksum Base32: {checksum_base32}")
+        print(f"Public Key Bytes: {public_key_bytes.hex()}")
+        print(f"Extracted Checksum Bytes: {extracted_checksum_bytes.hex()}")
+        print(f"Calculated Checksum: {calculated_checksum.hex()}")
 
         return extracted_checksum_bytes == calculated_checksum
 
@@ -187,16 +193,25 @@ class Wallet():
         if len(public_key) != 32:
             raise ValueError("Public key must be 32 bytes.")
 
-        # Encode public key
-        encoded_public_key = Utils.encode_nano_base32(public_key)
+        # Encode public key to Nano base32
+        encoded_public_key = Utils.encode_nano_base32(public_key).rjust(52, '1')
 
         # Calculate checksum
-        checksum = blake2b(public_key, digest_size=5).digest()[::-1]
-        encoded_checksum = Utils.encode_nano_base32(checksum)
+        checksum = blake2b(public_key, digest_size=5).digest()
+        checksum_reversed = checksum[::-1]  # Reverse the checksum bytes
+
+        # Encode checksum to Nano base32
+        encoded_checksum = Utils.encode_nano_base32(checksum_reversed).rjust(8, '1')
 
         # Form the account address
-        print(encoded_public_key, encoded_checksum)
         account = f"nano_{encoded_public_key}{encoded_checksum}"
+
+        # Debugging prints
+        print(f"Encoded Public Key: {encoded_public_key}")
+        print(f"Checksum: {checksum.hex()}")
+        print(f"Checksum Reversed: {checksum_reversed.hex()}")
+        print(f"Encoded Checksum: {encoded_checksum}")
+        print(f"Account: {account}")
 
         return account
 

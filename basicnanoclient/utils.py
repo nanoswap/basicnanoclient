@@ -33,6 +33,7 @@ class Utils():
     NANO_ALPHABET = '13456789abcdefghijkmnopqrstuwxyz'
     base32_alphabet = '13456789abcdefghijkmnopqrstuwxyz'
     account_lookup = "13456789abcdefghijkmnopqrstuwxyz"
+    alphabet = "13456789abcdefghijkmnopqrstuwxyz"
     account_reverse = "~0~1234567~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~89:;<=>?@AB~CDEFGHIJK~LMNO~~~~~"
 
     @staticmethod
@@ -75,18 +76,24 @@ class Utils():
 
     @staticmethod
     def encode_nano_base32(data: bytes) -> str:
-        """Encode bytes into a Nano base32 string."""
-        base32_string = ""
-        length = len(data)
-        for i in range(0, length, 5):
-            chunk = data[i:i+5]
-            num = int.from_bytes(chunk, 'big')
-            block = ""
-            for _ in range(8):
-                block = Utils.NANO_ALPHABET[num & 31] + block
-                num >>= 5
-            base32_string += block
-        return base32_string[:(length * 8 + 4) // 5]
+        """Encode data to a Nano base32 string.
+
+        Args:
+            data (bytes): The data to encode.
+
+        Returns:
+            str: The encoded data.
+        """
+        # Convert bytes to integer
+        data_int = int.from_bytes(data, byteorder="big")
+        # Encode integer to Nano base32 string
+        encoded = ""
+        while data_int:
+            data_int, remainder = divmod(data_int, 32)
+            encoded = Utils.alphabet[remainder] + encoded
+        # Pad with leading '1' characters
+        pad_length = (len(data) * 8 + 4) // 5 - len(encoded)
+        return '1' * pad_length + encoded
 
     @staticmethod
     def decode_nano_base32(data: str) -> bytes:
