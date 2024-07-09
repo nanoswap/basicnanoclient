@@ -76,20 +76,6 @@ class RPC():
             "account": account
         }).json()
 
-    def account_key(self: Self, account: str) -> Dict[str, Any]:
-        """Retrieve the public key of a Nano account.
-
-        Args:
-            account (str): The Nano account address.
-
-        Returns:
-            A dictionary with the public key of the Nano account.
-        """
-        return session.post(self.rpc_network, json={
-            "action": "account_key",
-            "account": account
-        }).json()
-
     def ledger(self: Self, account: str, count: int) -> Dict[str, Any]:
         """Retrieve the transaction history for a Nano account.
 

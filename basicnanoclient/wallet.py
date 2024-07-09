@@ -37,17 +37,6 @@ class Wallet():
             for i in range(account_count):
                 self.accounts.append(self.generate_account_key_pair(seed, i))
 
-    def validate_accounts(self: Self) -> bool:
-        """Validate the accounts in the wallet.
-
-        Returns:
-            bool: True if all accounts are valid, False otherwise.
-        """
-        return all(
-            self.validate_account(account["account"])
-            for account in self.accounts
-        )
-
     def validate_key_pairs(self: Self) -> bool:
         """Validate the key pairs in the wallet.
 
@@ -78,44 +67,6 @@ class Wallet():
             return True
         except Exception:
             return False
-
-    def validate_account(self: Self, account: str) -> bool:
-        """Validate a Nano account address using checksum.
-
-        Args:
-            account (str): The Nano account address.
-
-        Returns:
-            bool: True if the account address is valid, False otherwise.
-        """
-        if not account.startswith("nano_"):
-            return False
-
-        account_part = account[5:]
-        if len(account_part) != 60:
-            return False
-
-        # Extract checksum and public key part
-        account_base32 = account_part[:-8]
-        checksum_base32 = account_part[-8:]
-
-        try:
-            public_key_bytes = Utils.decode_nano_base32(account_base32)
-            extracted_checksum_bytes = Utils.decode_nano_base32(checksum_base32)
-        except ValueError:
-            return False
-
-        # Calculate checksum
-        calculated_checksum = blake2b(public_key_bytes, digest_size=5).digest()[::-1]
-
-        # Debugging prints
-        print(f"Account Base32: {account_base32}")
-        print(f"Checksum Base32: {checksum_base32}")
-        print(f"Public Key Bytes: {public_key_bytes.hex()}")
-        print(f"Extracted Checksum Bytes: {extracted_checksum_bytes.hex()}")
-        print(f"Calculated Checksum: {calculated_checksum.hex()}")
-
-        return extracted_checksum_bytes == calculated_checksum
 
     def key_expand(self: Self, key: str) -> Dict[str, Any]:
         """Expand a private key into a public key and account address.
@@ -205,14 +156,6 @@ class Wallet():
 
         # Form the account address
         account = f"nano_{encoded_public_key}{encoded_checksum}"
-
-        # Debugging prints
-        print(f"Encoded Public Key: {encoded_public_key}")
-        print(f"Checksum: {checksum.hex()}")
-        print(f"Checksum Reversed: {checksum_reversed.hex()}")
-        print(f"Encoded Checksum: {encoded_checksum}")
-        print(f"Account: {account}")
-
         return account
 
     def block_create(
