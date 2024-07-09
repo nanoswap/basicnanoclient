@@ -75,21 +75,18 @@ class Utils():
 
     @staticmethod
     def encode_nano_base32(data: bytes) -> str:
-        """Encode bytes using Nano's base32 alphabet.
-
-        Args:
-            data (bytes): The data to encode.
-
-        Returns:
-            str: The encoded data.
-        """
-        base32_alphabet = '13456789abcdefghijkmnopqrstuwxyz'
-        bits = ''.join(f'{byte:08b}' for byte in data)
-        # Pad bits to be a multiple of 5
-        padding = (5 - len(bits) % 5) % 5
-        bits = bits + '0' * padding
-        result = ''.join(base32_alphabet[int(bits[i:i + 5], 2)] for i in range(0, len(bits), 5))
-        return result
+        """Encode bytes into a Nano base32 string."""
+        base32_string = ""
+        length = len(data)
+        for i in range(0, length, 5):
+            chunk = data[i:i+5]
+            num = int.from_bytes(chunk, 'big')
+            block = ""
+            for _ in range(8):
+                block = Utils.NANO_ALPHABET[num & 31] + block
+                num >>= 5
+            base32_string += block
+        return base32_string[:(length * 8 + 4) // 5]
 
     @staticmethod
     def decode_nano_base32(data: str) -> bytes:

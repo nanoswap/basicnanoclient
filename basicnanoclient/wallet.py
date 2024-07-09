@@ -134,7 +134,6 @@ class Wallet():
                     error = True
         return error
 
-
     def validate_account(self: Self, account: str) -> bool:
         """Validate a Nano account address using checksum.
 
@@ -246,20 +245,6 @@ class Wallet():
             "public": public_key
         }
 
-    def encode_nano_base32(self: Self, data: bytes) -> str:
-        """Encode bytes into a Nano base32 string."""
-        base32_string = ""
-        length = len(data)
-        for i in range(0, length, 5):
-            chunk = data[i:i+5]
-            num = int.from_bytes(chunk, 'big')
-            block = ""
-            for _ in range(8):
-                block = self.NANO_ALPHABET[num & 31] + block
-                num >>= 5
-            base32_string += block
-        return base32_string[:(length * 8 + 4) // 5]
-
     def public_key_to_account(self: Self, public_key: str) -> str:
         """Convert a public key to a Nano account address.
 
@@ -269,33 +254,33 @@ class Wallet():
         Returns:
             str: The Nano account address.
         """
-        # public_key_bytes = binascii.unhexlify(public_key)
+        public_key_bytes = binascii.unhexlify(public_key)
 
-        # # Encode the public key in Nano's base32 format
-        # account_prefix = 'nano_'
-        # account_key = self.encode_nano_base32(public_key_bytes)
+        # Encode the public key in Nano's base32 format
+        account_prefix = 'nano_'
+        account_key = self.encode_nano_base32(public_key_bytes)
 
-        # # Compute the checksum
-        # checksum = blake2b(public_key_bytes, digest_size=5).digest()
-        # checksum = self.encode_nano_base32(checksum)
-        # return f"{account_prefix}{account_key}{checksum}"
+        # Compute the checksum
+        checksum = blake2b(public_key_bytes, digest_size=5).digest()
+        checksum = self.encode_nano_base32(checksum)
+        return f"{account_prefix}{account_key}{checksum}"
 
         # Verify the public key length (should be 32 bytes for Nano)
-        if len(public_key) != 32:
-            raise ValueError("Public key must be 32 bytes long.")
+        # if len(public_key) != 32:
+        #     raise ValueError("Public key must be 32 bytes long.")
 
-        # Step 1: Encode the public key using Nano's base32 encoding
-        encoded_public_key = self.encode_nano_base32(public_key)
+        # # Step 1: Encode the public key using Nano's base32 encoding
+        # encoded_public_key = self.encode_nano_base32(public_key)
 
-        # Step 2: Compute the checksum (first 5 bytes of the blake2b hash of the public key in reverse order)
-        checksum = hashlib.blake2b(public_key, digest_size=5).digest()
-        reversed_checksum = checksum[::-1]  # Reverse the checksum
-        encoded_checksum = self.encode_nano_base32(reversed_checksum)
+        # # Step 2: Compute the checksum (first 5 bytes of the blake2b hash of the public key in reverse order)
+        # checksum = hashlib.blake2b(public_key, digest_size=5).digest()
+        # reversed_checksum = checksum[::-1]  # Reverse the checksum
+        # encoded_checksum = self.encode_nano_base32(reversed_checksum)
 
-        # Step 3: Combine the encoded public key and the checksum to form the address
-        nano_address = f"nano_{encoded_public_key}{encoded_checksum}"
+        # # Step 3: Combine the encoded public key and the checksum to form the address
+        # nano_address = f"nano_{encoded_public_key}{encoded_checksum}"
         
-        return nano_address
+        # return nano_address
 
     def derive_account(self: Self, seed: str, index: int) -> Dict[str, str]:
         """Derive a Nano account from a seed and index.
