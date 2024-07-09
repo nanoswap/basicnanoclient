@@ -14,6 +14,8 @@ from nacl.encoding import RawEncoder
 from hashlib import blake2b
 import sys
 
+from .utils import Utils
+
 
 class Wallet():
     """Nano Wallet class."""
@@ -23,14 +25,28 @@ class Wallet():
     account_lookup = "13456789abcdefghijkmnopqrstuwxyz"
     account_reverse = "~0~1234567~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~89:;<=>?@AB~CDEFGHIJK~LMNO~~~~~"
 
-    def __init__(self: Self, seed: str = None) -> None:
+    def __init__(self: Self, seed: str = None, account_count: int = 0) -> None:
         """Initialize the NanoWallet class.
 
         Args:
             seed (str): The seed to use for the wallet.
         """
         self.seed = seed
+        self.accounts = []
+        if seed:
+            for i in range(account_count):
+                self.accounts.append(self.derive_account(seed, i))
 
+    def validate_accounts(self: Self) -> bool:
+        """Validate the accounts in the wallet.
+
+        Returns:
+            bool: True if all accounts are valid, False otherwise.
+        """
+        return all(
+            self.validate_account(account["account"])
+            for account in self.accounts
+        )
 
     def validate_key_pair(self: Self, private_key: str, public_key: str) -> bool:
         """Validate that a private key matches a public key.
@@ -151,9 +167,9 @@ class Wallet():
         prefix_length = 5  # 'nano_' prefix
         account_key = account[prefix_length:prefix_length + 52]
         checksum = account[prefix_length + 52:]
-        account_bytes = self.decode_nano_base32(account_key)
+        account_bytes = Utils.decode_nano_base32(account_key)
         computed_checksum = blake2b(account_bytes, digest_size=5).digest()
-        computed_checksum = self.encode_nano_base32(computed_checksum[::-1])
+        computed_checksum = Utils.encode_nano_base32(computed_checksum[::-1])
         return checksum == computed_checksum
 
     def key_expand(self: Self, key: str) -> Dict[str, Any]:
@@ -174,7 +190,7 @@ class Wallet():
         account = self.public_key_to_account(public_key)
         return {"public": public_key.hex(), "account": account}
 
-    def generate_account_private_key(self: Self, seed: str, index: int):
+    def generate_account_private_key(self: Self, seed: str, index: int) -> str:
         """Generate a new account private key from a seed and index.
 
         Args:
@@ -186,13 +202,13 @@ class Wallet():
             str: A 64-character hexadecimal string representing the
                 Nano private key.
         """
-        if len(seed) != 64 or not self.is_hex(seed):
+        if len(seed) != 64 or not Utils.is_hex(seed):
             raise ValueError("Seed must be a 64-character hexadecimal string")
 
         if not isinstance(index, int):
             raise ValueError("Index must be an integer")
 
-        account_bytes = binascii.unhexlify(self.dec_to_hex(index, 4))
+        account_bytes = binascii.unhexlify(Utils.dec_to_hex(index, 4))
         context = blake2b(digest_size=32)
         context.update(binascii.unhexlify(seed))
         context.update(account_bytes)

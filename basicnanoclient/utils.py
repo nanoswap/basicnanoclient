@@ -73,27 +73,23 @@ class Utils():
         except binascii.Error:
             return False
 
-    # def encode_nano_base32(self: Self, bytes_data: bytes) -> str:
-    #     bitarr_bits = len(bytes_data) * 8
-    #     leftover = 5 - (bitarr_bits % 5)
-    #     bitarr_bits += leftover
+    @staticmethod
+    def encode_nano_base32(data: bytes) -> str:
+        """Encode bytes using Nano's base32 alphabet.
 
-    #     bitarr = [0] * bitarr_bits
+        Args:
+            data (bytes): The data to encode.
 
-    #     index = leftover
-    #     for byte in bytes_data:
-    #         for i in range(8):
-    #             bitarr[index] = (byte >> (7 - i)) & 1
-    #             index += 1
-
-    #     result = []
-    #     for i in range(0, bitarr_bits, 5):
-    #         byte = 0
-    #         for j in range(5):
-    #             byte = (byte << 1) | bitarr[i + j]
-    #         result.append(self.NBASE32_CHARS[byte])
-
-    #     return ''.join(result)
+        Returns:
+            str: The encoded data.
+        """
+        base32_alphabet = '13456789abcdefghijkmnopqrstuwxyz'
+        bits = ''.join(f'{byte:08b}' for byte in data)
+        # Pad bits to be a multiple of 5
+        padding = (5 - len(bits) % 5) % 5
+        bits = bits + '0' * padding
+        result = ''.join(base32_alphabet[int(bits[i:i + 5], 2)] for i in range(0, len(bits), 5))
+        return result
 
     @staticmethod
     def decode_nano_base32(data: str) -> bytes:
