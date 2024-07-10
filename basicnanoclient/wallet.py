@@ -2,17 +2,11 @@ __package__ = "basicnanoclient"
 
 from typing import Any, Dict, Self
 import binascii
-import requests
 import random
-import base64
 import struct
-import os
-import hashlib
-import sys
 from nacl.signing import SigningKey, VerifyKey
 from nacl.encoding import RawEncoder
 from hashlib import blake2b
-import sys
 
 from .utils import Utils
 
@@ -209,14 +203,16 @@ class Wallet():
         Returns:
             str: The work value.
         """
-        target = 0xfffffff93c41ec94  # Nano's default threshold
+        target = 0xfffffff800000000  # Nano's default threshold for state blocks
+        previous_bytes = binascii.unhexlify(previous)
         nonce = random.getrandbits(64)
         while True:
             work = struct.pack('>Q', nonce)
             h = blake2b(digest_size=8)
-            h.update(work)
-            h.update(binascii.unhexlify(previous))
-            if int.from_bytes(h.digest(), byteorder='big') >= target:
+            h.update(work[::-1])  # Reverse the work bytes
+            h.update(previous_bytes)
+            work_hash = h.digest()
+            if int.from_bytes(work_hash, byteorder='big') >= target:
                 break
             nonce += 1
         return binascii.hexlify(work).decode()

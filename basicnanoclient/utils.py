@@ -2,30 +2,8 @@ __package__ = "basicnanoclient"
 
 from typing import Any, Dict, Self
 import binascii
-import requests
-import random
-import base64
-import struct
 import os
-import hashlib
-import sys
-from nacl.signing import SigningKey, VerifyKey
-from nacl.encoding import RawEncoder
-from hashlib import blake2b
 
-
-class uint256_t(int):
-    def __new__(cls, value):
-        return super().__new__(cls, value % 2**256)
-
-class uint256_union:
-    def __init__(self, bytes):
-        self.bytes = bytes
-
-    def number(self):
-        # Assuming self.bytes is a bytes object of length 32 (similar to C++ uint256_t)
-        result = int.from_bytes(self.bytes, byteorder=sys.byteorder)
-        return uint256_t(result)
 
 class Utils():
     """Utility functions for working with Nano."""
@@ -112,10 +90,6 @@ class Utils():
         bits = bits[:-padding_length] if padding_length else bits
         result = bytes(int(bits[i:i + 8], 2) for i in range(0, len(bits), 8))
         return result
-
-    @staticmethod
-    def number(seed_bytes: bytes):
-        return uint256_union(seed_bytes).number()
 
     @staticmethod
     def account_encode(value):

@@ -1,17 +1,7 @@
 __package__ = "basicnanoclient"
 
 from typing import Any, Dict, Self
-import binascii
 import requests
-import random
-import base64
-import struct
-import os
-import hashlib
-import sys
-from nacl.signing import SigningKey, VerifyKey
-from nacl.encoding import RawEncoder
-from hashlib import blake2b
 
 from .wallet import Wallet
 
@@ -210,3 +200,29 @@ class RPC():
             destination,
             key
         )
+
+    def receive_first(self: Self, block_hash: str, private_key: str) -> dict:
+        """Receive the first block for an account.
+
+        Args:
+            block_hash (str): The block hash to receive (from `receivable`)
+            private_key (str): The private key of the receiving account
+
+        Returns:
+            dict: A dictionary containing information about the transaction.
+        """
+        block_info = self.block_info(block_hash)
+
+        # Ensure this is the first block for the receiving account
+        previous = '0000000000000000000000000000000000000000000000000000000000000000'
+
+        response = self.sign_and_process(
+            previous=previous,
+            account=block_info['contents']['link_as_account'],
+            representative=block_info['contents']['representative'],
+            balance=block_info['amount'],
+            link=block_hash,
+            key=private_key,
+            subtype="receive"
+        )
+        return response
