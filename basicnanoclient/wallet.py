@@ -9,6 +9,7 @@ from hashlib import blake2b
 import hashlib
 import requests
 import random
+import os
 
 from .utils import Utils
 
@@ -198,38 +199,26 @@ class Wallet():
             # "work": Wallet.generate_work_rpc(previous)
         }
         return block
-    
-    @staticmethod
-    def hex_to_uint64(hex_str):
-        return int(hex_str, 16)
 
     @staticmethod
-    def uint64_to_hex(uint64):
-        return '{:016x}'.format(uint64)
-
-    @staticmethod
-    def calculate_difficulty(work, root):
-        """Calculate the difficulty of the work for the given root."""
-        context = hashlib.blake2b(digest_size=8)
-        context.update(struct.pack('>Q', work))
-        context.update(root)
-        return Wallet.hex_to_uint64(context.hexdigest())
-
-    def generate_work(root, base_difficulty=0xfffffff800000000):
+    def generate_work(block_hash, difficulty=0xfffffff800000000):
         """Generate a valid proof-of-work for the given root."""
-        root_bytes = bytes.fromhex(root)
-        random_gen = random.SystemRandom()
-
         while True:
-            work = random_gen.getrandbits(64)
-            difficulty = Wallet.calculate_difficulty(work, root_bytes)
+            nonce = os.urandom(8)  # Generate a random 8-byte nonce
+            combined = block_hash.encode() + nonce  # Ensure block_hash is encoded as bytes
+            work_hash = hashlib.blake2b(combined, digest_size=8).hexdigest()
 
-            if difficulty >= base_difficulty:
+            # Calculate multiplier
+            work_hash_int = int(work_hash, 16)
+            multiplier = 0xffffffc000000000 / (work_hash_int + 1)
+
+            # Check if multiplier meets the difficulty requirement
+            if multiplier > difficulty:
                 return {
-                    'hash': root,
-                    'work': Wallet.uint64_to_hex(work),
-                    'difficulty': Wallet.uint64_to_hex(difficulty),
-                    'multiplier': difficulty / base_difficulty
+                    "hash": work_hash,
+                    "work": work_hash,
+                    "multiplier": multiplier,
+                    "difficulty": difficulty
                 }
 
     @staticmethod
