@@ -2,11 +2,11 @@ __package__ = "basicnanoclient"
 
 from typing import Any, Dict, Self
 import binascii
-import random
 import struct
 from nacl.signing import SigningKey, VerifyKey
 from nacl.encoding import RawEncoder
 from hashlib import blake2b
+import hashlib
 
 from .utils import Utils
 
@@ -194,25 +194,34 @@ class Wallet():
         return block
 
     @staticmethod
-    def generate_work(previous: str) -> str:
+    def generate_work(previous: str, block_type: str = "receive") -> str:
         """Generate work for a Nano block.
 
         Args:
             block (str): The block hash.
+            block_type (str): The type of block. Must be 'send', 'receive', or
+                'change'.
 
         Returns:
             str: The work value.
         """
-        target = 0xfffffff800000000  # Nano's default threshold for state blocks
-        previous_bytes = binascii.unhexlify(previous)
-        nonce = random.getrandbits(64)
+        # Thresholds for different block types
+        if block_type in ["send", "change"]:
+            threshold = 0xfffffff800000000  # Higher threshold for send/change blocks
+        elif block_type == "receive":
+            threshold = 0xfffffe0000000000  # Lower threshold for receive blocks
+        else:
+            raise ValueError("Invalid block type. Must be 'send', 'receive', or 'change'.")
+
+        previous_bytes = bytes.fromhex(previous)
+
+        nonce = 0
         while True:
-            work = struct.pack('>Q', nonce)
-            h = blake2b(digest_size=8)
-            h.update(work[::-1])  # Reverse the work bytes
-            h.update(previous_bytes)
-            work_hash = h.digest()
-            if int.from_bytes(work_hash, byteorder='big') >= target:
-                break
+            nonce_bytes = struct.pack('<Q', nonce)
+            work_hash = hashlib.blake2b(nonce_bytes + previous_bytes, digest_size=8).digest()
+            work_value = int.from_bytes(work_hash, 'little')
+
+            if work_value >= threshold:
+                return nonce_bytes.hex()
+
             nonce += 1
-        return binascii.hexlify(work).decode()
