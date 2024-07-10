@@ -223,6 +223,6 @@ class RPC():
             balance=block_info['amount'],
             link=block_hash,
             key=private_key,
-            subtype="receive"
+            subtype="open"
         )
         return response

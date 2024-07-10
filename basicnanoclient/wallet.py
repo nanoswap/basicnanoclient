@@ -7,6 +7,8 @@ from nacl.signing import SigningKey, VerifyKey
 from nacl.encoding import RawEncoder
 from hashlib import blake2b
 import hashlib
+import requests
+import random
 
 from .utils import Utils
 
@@ -180,6 +182,9 @@ class Wallet():
         link_hash = blake2b(digest_size=32)
         link_hash.update(link.encode())
 
+        work = Wallet.generate_work(previous)
+        print(work)
+
         block = {
             "type": "state",
             "account": account,
@@ -189,39 +194,58 @@ class Wallet():
             "link": link,
             "link_as_account": link,
             "signature": sk.sign(previous_hash.digest() + link_hash.digest()).signature.hex(),
-            "work": Wallet.generate_work(previous)
+            "work": work['work']
+            # "work": Wallet.generate_work_rpc(previous)
         }
         return block
+    
+    @staticmethod
+    def hex_to_uint64(hex_str):
+        return int(hex_str, 16)
 
     @staticmethod
-    def generate_work(previous: str, block_type: str = "receive") -> str:
-        """Generate work for a Nano block.
+    def uint64_to_hex(uint64):
+        return '{:016x}'.format(uint64)
+
+    @staticmethod
+    def calculate_difficulty(work, root):
+        """Calculate the difficulty of the work for the given root."""
+        context = hashlib.blake2b(digest_size=8)
+        context.update(struct.pack('>Q', work))
+        context.update(root)
+        return Wallet.hex_to_uint64(context.hexdigest())
+
+    def generate_work(root, base_difficulty=0xfffffff800000000):
+        """Generate a valid proof-of-work for the given root."""
+        root_bytes = bytes.fromhex(root)
+        random_gen = random.SystemRandom()
+
+        while True:
+            work = random_gen.getrandbits(64)
+            difficulty = Wallet.calculate_difficulty(work, root_bytes)
+
+            if difficulty >= base_difficulty:
+                return {
+                    'hash': root,
+                    'work': Wallet.uint64_to_hex(work),
+                    'difficulty': Wallet.uint64_to_hex(difficulty),
+                    'multiplier': difficulty / base_difficulty
+                }
+
+    @staticmethod
+    def generate_work_rpc(hash: str) -> str:
+        """Generate work for a given hash.
 
         Args:
-            block (str): The block hash.
-            block_type (str): The type of block. Must be 'send', 'receive', or
-                'change'.
+            hash (str): The hash to generate work for.
 
         Returns:
-            str: The work value.
+            str: The generated work.
         """
-        # Thresholds for different block types
-        if block_type in ["send", "change"]:
-            threshold = 0xfffffff800000000  # Higher threshold for send/change blocks
-        elif block_type == "receive":
-            threshold = 0xfffffe0000000000  # Lower threshold for receive blocks
-        else:
-            raise ValueError("Invalid block type. Must be 'send', 'receive', or 'change'.")
-
-        previous_bytes = bytes.fromhex(previous)
-
-        nonce = 0
-        while True:
-            nonce_bytes = struct.pack('<Q', nonce)
-            work_hash = hashlib.blake2b(nonce_bytes + previous_bytes, digest_size=8).digest()
-            work_value = int.from_bytes(work_hash, 'little')
-
-            if work_value >= threshold:
-                return nonce_bytes.hex()
-
-            nonce += 1
+        session = requests.Session()
+        response = session.post("http://127.0.0.1:17076", json={
+            "action": "work_generate",
+            "hash": hash
+        }).json()
+        print(response)
+        return response['work']
