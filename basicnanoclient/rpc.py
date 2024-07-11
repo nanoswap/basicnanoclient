@@ -101,6 +101,36 @@ class RPC():
             "hash": block
         }).json()
 
+    def account_representative(self: Self, account: str) -> dict:
+        """Retrieve the representative for a Nano account.
+
+        Args:
+            account (str): The Nano account address.
+
+        Returns:
+            dict: A dictionary containing the representative for the account.
+        """
+        return session.post(self.rpc_network, json={
+            "action": "account_representative",
+            "account": account
+        }).json()
+
+    def work_validate(self: Self, work: str, hash: str) -> dict:
+        """Validate a proof of work.
+
+        Args:
+            work (str): The proof of work.
+            hash (str): The block hash.
+
+        Returns:
+            dict: A dictionary containing information about the proof of work.
+        """
+        return session.post(self.rpc_network, json={
+            "action": "work_validate",
+            "work": work,
+            "hash": hash
+        }).json()
+
     def process(self: Self, block: dict, sub_type: str = "send") -> dict:
         """Process a block.
 
@@ -110,6 +140,7 @@ class RPC():
         Returns:
             dict: A dictionary containing information about the block.
         """
+        print(block)
         response = requests.post(self.rpc_network, json={
             "action": "process",
             "json_block": "true",
@@ -117,45 +148,6 @@ class RPC():
             "block": block
         })
         return response.json()
-
-    def sign_and_process(
-            self: Self,
-            previous: str,
-            account: str,
-            representative: str,
-            balance: str,
-            link: str,
-            key: str,
-            subtype: str) -> dict:
-        """Sign and send a transaction.
-
-        Args:
-            previous (str): The previous block hash.
-            account (str): The account address.
-            representative (str): The representative address.
-            balance (str): The new account balance.
-            link (str): The link to a previous block.
-            key (str): The account private key.
-            subtype (str): The type of transaction.
-
-        Returns:
-            dict: A dictionary containing information
-                about the transaction.
-        """
-        # Create the block
-        block = Wallet.block_create(
-            previous,
-            account,
-            representative,
-            balance,
-            link,
-            key
-        )
-
-        # Process the block
-        response = self.process(block, subtype)
-
-        return response
 
     def send(
             self: Self,
@@ -201,28 +193,94 @@ class RPC():
             key
         )
 
-    def receive_first(self: Self, block_hash: str, private_key: str) -> dict:
-        """Receive the first block for an account.
+    # def receive(self: Self, hash: str, private_key: str) -> dict:
+    #     """Receive a pending Nano transaction.
+
+    #     Args:
+    #         hash (str): The hash of the pending transaction.
+    #         private_key (str): The private key of the receiving account.
+
+    #     Returns:
+    #         dict: A dictionary containing information about the transaction.
+    #     """
+    #     # Retrieve the block info
+    #     block_info = self.block_info(hash)
+
+    #     # Ensure this is the first block for the receiving account
+    #     previous = 
+
+    def open_account(self: Self, account: str, private_key: str, hash: str, representative: str, balance: str) -> dict:
+        """Open a new Nano account.
 
         Args:
-            block_hash (str): The block hash to receive (from `receivable`)
-            private_key (str): The private key of the receiving account
+            account (str): The account to open.
+            representative (str): The representative for the account.
+            private_key (str): The private key of the account.
+            hash (str): The hash of the send transaction to open the account.
+            representative (str): The representative for the account.
+            balance (str): Amount being sent in the linked block (in raw).
 
         Returns:
             dict: A dictionary containing information about the transaction.
         """
-        block_info = self.block_info(block_hash)
-
-        # Ensure this is the first block for the receiving account
         previous = '0000000000000000000000000000000000000000000000000000000000000000'
 
-        response = self.sign_and_process(
+        # Create the block
+        block = Wallet.block_create(
             previous=previous,
-            account=block_info['contents']['link_as_account'],
-            representative=block_info['contents']['representative'],
-            balance=block_info['amount'],
-            link=block_hash,
-            key=private_key,
-            subtype="open"
+            account=account,
+            representative=representative,
+            balance=balance,
+            link=hash,
+            key=private_key
         )
+
+        # Process the block
+        response = self.process(block, "open")
         return response
+
+    # def receive_first(self: Self, block_hash: str, private_key: str, account: str) -> dict:
+    #     """Receive the first block for an account.
+
+    #     Args:
+    #         block_hash (str): The block hash to receive (from `receivable`)
+    #         private_key (str): The private key of the receiving account
+    #         account (str): The account to receive the block
+
+    #     Returns:
+    #         dict: A dictionary containing information about the transaction.
+    #     """
+
+    #     # Open the account
+    #     self.open_account(account, private_key, block_hash)
+
+    #     # Retrieve the block info
+
+    #     block_info = self.block_info(block_hash)
+
+    #     # Ensure this is the first block for the receiving account
+    #     previous = '0000000000000000000000000000000000000000000000000000000000000000'
+
+    #     # response = self.sign_and_process(
+    #     #     previous=previous,
+    #     #     account=block_info['contents']['link_as_account'],
+    #     #     representative=block_info['contents']['representative'],
+    #     #     balance=block_info['amount'],
+    #     #     link=block_hash,
+    #     #     key=private_key,
+    #     #     subtype="open"
+    #     # )
+
+    #     # Create the block
+    #     block = Wallet.block_create(
+    #         previous,
+    #         account,
+    #         representative,
+    #         balance,
+    #         link,
+    #         key
+    #     )
+
+    #     # Process the block
+    #     response = self.process(block, "open")
+    #     return response

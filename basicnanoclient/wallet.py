@@ -183,8 +183,8 @@ class Wallet():
         link_hash = blake2b(digest_size=32)
         link_hash.update(link.encode())
 
-        work = Wallet.generate_work(previous)
-        print(work)
+        work = Wallet.generate_work_rpc(previous)
+        signature = sk.sign(previous_hash.digest() + link_hash.digest()).signature.hex()
 
         block = {
             "type": "state",
@@ -194,32 +194,36 @@ class Wallet():
             "balance": balance,
             "link": link,
             "link_as_account": link,
-            "signature": sk.sign(previous_hash.digest() + link_hash.digest()).signature.hex(),
-            "work": work['work']
-            # "work": Wallet.generate_work_rpc(previous)
+            "signature": signature,
+            "work": work
         }
         return block
 
     @staticmethod
     def generate_work(block_hash, difficulty=0xfffffff800000000):
         """Generate a valid proof-of-work for the given root."""
+        nonce = 0
+        block_hash_bytes = bytes.fromhex(block_hash)  # Convert block hash from hex to bytes
+
         while True:
-            nonce = os.urandom(8)  # Generate a random 8-byte nonce
-            combined = block_hash.encode() + nonce  # Ensure block_hash is encoded as bytes
-            work_hash = hashlib.blake2b(combined, digest_size=8).hexdigest()
+            # Convert nonce to bytes
+            nonce_bytes = struct.pack('<Q', nonce)
 
-            # Calculate multiplier
-            work_hash_int = int(work_hash, 16)
-            multiplier = 0xffffffc000000000 / (work_hash_int + 1)
+            # Combine block hash and nonce
+            combined = block_hash_bytes + nonce_bytes
 
-            # Check if multiplier meets the difficulty requirement
-            if multiplier > difficulty:
-                return {
-                    "hash": work_hash,
-                    "work": work_hash,
-                    "multiplier": multiplier,
-                    "difficulty": difficulty
-                }
+            # Calculate the Blake2b hash of the combined data
+            work_hash = hashlib.blake2b(combined, digest_size=8).digest()
+
+            # Convert the result to an integer
+            work_hash_int = int.from_bytes(work_hash, byteorder='little')
+
+            # Check if the work hash meets the difficulty requirement
+            if work_hash_int >= difficulty:
+                return nonce_bytes.hex()
+
+            # Increment nonce
+            nonce += 1
 
     @staticmethod
     def generate_work_rpc(hash: str) -> str:
@@ -234,7 +238,8 @@ class Wallet():
         session = requests.Session()
         response = session.post("http://127.0.0.1:17076", json={
             "action": "work_generate",
-            "hash": hash
+            "hash": hash,
+            "multiplier": "1.0"
         }).json()
         print(response)
         return response['work']
