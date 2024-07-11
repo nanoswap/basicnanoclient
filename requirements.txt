@@ -1,6 +1,8 @@
 requests
 setuptools
 pynacl
+ed25519
+bitstring
 
 # for testing
 nox

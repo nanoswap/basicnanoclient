@@ -2,6 +2,10 @@ __package__ = "basicnanoclient"
 
 from typing import Any, Dict, Self
 import requests
+from hashlib import blake2b
+import binascii
+import ed25519
+from bitstring import BitArray
 
 from .wallet import Wallet
 
@@ -209,31 +213,52 @@ class RPC():
     #     # Ensure this is the first block for the receiving account
     #     previous = 
 
-    def open_account(self: Self, account: str, private_key: str, hash: str, representative: str, balance: str) -> dict:
+    def open_account(self: Self, account: str, private_key: str, public_key: str, hash: str, balance: str) -> dict:
         """Open a new Nano account.
 
         Args:
             account (str): The account to open.
-            representative (str): The representative for the account.
             private_key (str): The private key of the account.
-            hash (str): The hash of the send transaction to open the account.
-            representative (str): The representative for the account.
-            balance (str): Amount being sent in the linked block (in raw).
+            public_key (str): The public key of the account.
+            hash (str): The hash of the first block.
+            balance (str): The balance of the account.
 
         Returns:
             dict: A dictionary containing information about the transaction.
         """
         previous = '0000000000000000000000000000000000000000000000000000000000000000'
+        representative = account
+
+        # Generate work using public key
+        work = Wallet.generate_work_rpc(public_key)
+        print("Work: " + work)
+
+        # Calculate the signature
+        sk = ed25519.SigningKey(binascii.unhexlify(private_key))
+
+        bh = blake2b(digest_size=32)
+        bh.update(binascii.unhexlify("0000000000000000000000000000000000000000000000000000000000000006"))  # Prefix for state blocks
+        bh.update(binascii.unhexlify(public_key))
+        bh.update(binascii.unhexlify(previous))
+        bh.update(binascii.unhexlify(public_key))
+        bh.update(binascii.unhexlify(balance))
+        bh.update(binascii.unhexlify(hash))
+
+        sig = sk.sign(bh.digest())
+        signature = sig.hex()
 
         # Create the block
-        block = Wallet.block_create(
-            previous=previous,
-            account=account,
-            representative=representative,
-            balance=balance,
-            link=hash,
-            key=private_key
-        )
+        block = {
+            "type": "state",
+            "account": account,
+            "previous": previous,
+            "representative": representative,
+            "balance": balance,
+            "link": hash,
+            "link_as_account": hash,
+            "signature": signature,
+            "work": work
+        }
 
         # Process the block
         response = self.process(block, "open")

@@ -30,6 +30,8 @@ setup(
     python_requires=">=3.11",
     install_requires=[
         "requests",
-        "pynacl"
+        "pynacl",
+        "ed25519",
+        "bitstring"
     ],
 )

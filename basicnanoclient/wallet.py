@@ -156,50 +156,6 @@ class Wallet():
         return account
 
     @staticmethod
-    def block_create(
-            previous: str,
-            account: str,
-            representative: str,
-            balance: str,
-            link: str,
-            key: str) -> Dict[str, Any]:
-        """Create a new block.
-
-        Args:
-            previous (str): The previous block hash.
-            account (str): The account address.
-            representative (str): The representative address.
-            balance (str): The new account balance.
-            link (str): The link to a previous block.
-            key (str): The account private key.
-
-        Returns:
-            dict: A dictionary containing information
-                about the newly created block.
-        """
-        sk = SigningKey(binascii.unhexlify(key))
-        previous_hash = blake2b(digest_size=32)
-        previous_hash.update(previous.encode())
-        link_hash = blake2b(digest_size=32)
-        link_hash.update(link.encode())
-
-        work = Wallet.generate_work_rpc(previous)
-        signature = sk.sign(previous_hash.digest() + link_hash.digest()).signature.hex()
-
-        block = {
-            "type": "state",
-            "account": account,
-            "previous": previous,
-            "representative": representative,
-            "balance": balance,
-            "link": link,
-            "link_as_account": link,
-            "signature": signature,
-            "work": work
-        }
-        return block
-
-    @staticmethod
     def generate_work(block_hash, difficulty=0xfffffff800000000):
         """Generate a valid proof-of-work for the given root."""
         nonce = 0
