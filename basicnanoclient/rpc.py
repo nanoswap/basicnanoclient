@@ -232,12 +232,12 @@ class RPC():
             bytes: The hash of the block.
         """
         bh = blake2b(digest_size=32)
-        bh.update(binascii.unhexlify("0000000000000000000000000000000000000000000000000000000000000006"))  # Prefix for state blocks
-        bh.update(binascii.unhexlify(public_key))
-        bh.update(binascii.unhexlify(previous))
-        bh.update(binascii.unhexlify(representative))
-        bh.update(binascii.unhexlify(balance))
-        bh.update(binascii.unhexlify(link))
+        bh.update(BitArray(hex='0000000000000000000000000000000000000000000000000000000000000006').bytes)
+        bh.update(BitArray(hex=public_key).bytes)
+        bh.update(BitArray(hex=previous).bytes)
+        bh.update(BitArray(hex=representative).bytes)
+        bh.update(BitArray(hex=balance).bytes)
+        bh.update(BitArray(hex=link).bytes)
         return bh.digest()
 
     def _sign_block_hash(self: Self, block_hash: str, private_key: str, public_key: str) -> str:
@@ -255,15 +255,16 @@ class RPC():
         sig = sk.sign(block_hash)
         return binascii.hexlify(sig).decode()
 
-    def open_account(self: Self, account: str, private_key: str, public_key: str, hash: str, balance: str, work: str = None) -> dict:
+    def open_account(self: Self, account: str, private_key: str, public_key: str, send_block_hash: str, received_amount: str, work: str = None) -> dict:
         """Open a new Nano account.
 
         Args:
             account (str): The account to open.
             private_key (str): The private key of the account.
             public_key (str): The public key of the account.
-            hash (str): The hash of the first block.
-            balance (str): The balance of the account.
+            send_block_hash (str): The hash of the first block.
+            received_amount (str): The balance of the account.
+            work (str): The proof of work for the block.
 
         Returns:
             dict: A dictionary containing information about the transaction.
@@ -274,13 +275,16 @@ class RPC():
         # Convert representative to public key
         representative_key = Utils.nano_address_to_public_key(representative)
 
+        # Use received_amount as the new balance since it's the first block
+        balance = hex(int(received_amount))[2:].upper().rjust(32, '0')
+
         # Generate work using public key
         if work is None:
             work = Wallet.generate_work_rpc(public_key)
             print("Work: " + work)
 
         # Calculate the signature
-        new_block_hash = self._calculate_block_hash(public_key, previous, representative_key, balance, hash)
+        new_block_hash = self._calculate_block_hash(public_key, previous, representative_key, balance, send_block_hash)
         signature = self._sign_block_hash(new_block_hash, private_key, public_key)
 
         # Create the block
@@ -290,7 +294,7 @@ class RPC():
             "previous": previous,
             "representative": representative,
             "balance": balance,
-            "link": hash,
+            "link": send_block_hash,
             "signature": signature,
             "work": work
         }
