@@ -1,5 +1,6 @@
 __package__ = "basicnanoclient"
 
+import json
 from typing import Any, Dict, Self
 import requests
 from hashlib import blake2b
@@ -146,12 +147,15 @@ class RPC():
             dict: A dictionary containing information about the block.
         """
         print(block)
-        response = requests.post(self.rpc_network, json={
+        block_json = json.dumps(block)
+        request = {
             "action": "process",
             "json_block": "true",
             "sub_type": sub_type,
             "block": block
-        })
+        }
+        print(request)
+        response = requests.post(self.rpc_network, json=request)
         return response.json()
 
     def send(
@@ -236,19 +240,20 @@ class RPC():
         bh.update(binascii.unhexlify(link))
         return bh.digest()
 
-    def _sign_block_hash(self: Self, block_hash: str, private_key: str) -> str:
+    def _sign_block_hash(self: Self, block_hash: str, private_key: str, public_key: str) -> str:
         """Sign a block hash.
 
         Args:
             block_hash (str): The block hash to sign.
             private_key (str): The private key of the account.
+            public_key (str): The public key of the account.
 
         Returns:
             str: The signature of the block hash.
         """
-        sk = ed25519.SigningKey(binascii.unhexlify(private_key))
+        sk = ed25519.SigningKey(binascii.unhexlify(private_key) + binascii.unhexlify(public_key))
         sig = sk.sign(block_hash)
-        return sig.hex()
+        return binascii.hexlify(sig).decode()
 
     def open_account(self: Self, account: str, private_key: str, public_key: str, hash: str, balance: str, work: str = None) -> dict:
         """Open a new Nano account.
@@ -276,7 +281,7 @@ class RPC():
 
         # Calculate the signature
         new_block_hash = self._calculate_block_hash(public_key, previous, representative_key, balance, hash)
-        signature = self._sign_block_hash(new_block_hash, private_key)
+        signature = self._sign_block_hash(new_block_hash, private_key, public_key)
 
         # Create the block
         block = {
