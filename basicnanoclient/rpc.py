@@ -7,6 +7,7 @@ import binascii
 import ed25519
 from bitstring import BitArray
 
+from .utils import Utils
 from .wallet import Wallet
 
 rpc_network: str = "http://127.0.0.1:17076"
@@ -213,7 +214,7 @@ class RPC():
     #     # Ensure this is the first block for the receiving account
     #     previous = 
 
-    def _calculate_block_hash(self: Self, public_key: str, previous: str, representative: str, balance: str, link: str) -> str:
+    def _calculate_block_hash(self: Self, public_key: str, previous: str, representative: str, balance: str, link: str) -> bytes:
         """Calculate the hash of a Nano block.
 
         Args:
@@ -224,7 +225,7 @@ class RPC():
             link (str): The link hash.
 
         Returns:
-            str: The hash of the block.
+            bytes: The hash of the block.
         """
         bh = blake2b(digest_size=32)
         bh.update(binascii.unhexlify("0000000000000000000000000000000000000000000000000000000000000006"))  # Prefix for state blocks
@@ -246,10 +247,10 @@ class RPC():
             str: The signature of the block hash.
         """
         sk = ed25519.SigningKey(binascii.unhexlify(private_key))
-        sig = sk.sign(binascii.unhexlify(block_hash))
+        sig = sk.sign(block_hash)
         return sig.hex()
 
-    def open_account(self: Self, account: str, private_key: str, public_key: str, hash: str, balance: str) -> dict:
+    def open_account(self: Self, account: str, private_key: str, public_key: str, hash: str, balance: str, work: str = None) -> dict:
         """Open a new Nano account.
 
         Args:
@@ -263,14 +264,18 @@ class RPC():
             dict: A dictionary containing information about the transaction.
         """
         previous = '0000000000000000000000000000000000000000000000000000000000000000'
-        representative = account
+        representative = "nano_1qzjqcpmwh9osbht7mub5jhyyfb69pyddjk9my6nn8efjxqeu85c44py6zff"  # Nano foundation representative
+
+        # Convert representative to public key
+        representative_key = Utils.nano_address_to_public_key(representative)
 
         # Generate work using public key
-        work = Wallet.generate_work_rpc(public_key)
-        print("Work: " + work)
+        if work is None:
+            work = Wallet.generate_work_rpc(public_key)
+            print("Work: " + work)
 
         # Calculate the signature
-        new_block_hash = self._calculate_block_hash(public_key, previous, representative, balance, hash)
+        new_block_hash = self._calculate_block_hash(public_key, previous, representative_key, balance, hash)
         signature = self._sign_block_hash(new_block_hash, private_key)
 
         # Create the block

@@ -4,6 +4,8 @@ from typing import Any, Dict, Self
 import binascii
 import os
 
+from bitstring import BitArray
+
 
 class Utils():
     """Utility functions for working with Nano."""
@@ -105,3 +107,23 @@ class Utils():
         if result != '~':
             result = ord(result) - 0x30
         return result
+
+    @staticmethod
+    def nano_address_to_public_key(address: str) -> str:
+        """Convert a Nano address to a public key."""
+        if address.startswith('nano_'):
+            address = address[5:]
+        elif address.startswith('xrb_'):
+            address = address[4:]
+
+        account_map = "13456789abcdefghijkmnopqrstuwxyz"
+        account_lookup = {account_map[i]: i for i in range(len(account_map))}
+
+        key_bytes = BitArray()
+        for char in address:
+            key_bytes.append(BitArray(uint=account_lookup[char], length=5))
+
+        # The first four bits are dropped
+        key_bytes = key_bytes[4:]
+        public_key = key_bytes.bytes.hex().upper()
+        return public_key
