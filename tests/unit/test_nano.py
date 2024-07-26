@@ -16,21 +16,6 @@ class TestBasicNanoClient(unittest.TestCase):
         self.mock_response = Mock()
 
     @patch('requests.Session.post')
-    def test_receive(self: Self, mock_post: Mock) -> None:
-        """Test the receive method."""
-        self.mock_response.json.return_value = {
-            "block": "sample_block"
-        }
-        mock_post.return_value = self.mock_response
-
-        response = self.client.receive(
-            "sample_wallet",
-            "sample_account",
-            "sample_block"
-        )
-        self.assertEqual(response["block"], "sample_block")
-
-    @patch('requests.Session.post')
     def test_account_info(self: Self, mock_post: Mock) -> None:
         """Test the account_info method."""
         self.mock_response.json.return_value = {

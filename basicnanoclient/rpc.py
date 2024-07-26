@@ -213,6 +213,42 @@ class RPC():
     #     # Ensure this is the first block for the receiving account
     #     previous = 
 
+    def _calculate_block_hash(self: Self, public_key: str, previous: str, representative: str, balance: str, link: str) -> str:
+        """Calculate the hash of a Nano block.
+
+        Args:
+            public_key (str): The public key of the account.
+            previous (str): The previous block hash.
+            representative (str): The representative account.
+            balance (str): The balance of the account.
+            link (str): The link hash.
+
+        Returns:
+            str: The hash of the block.
+        """
+        bh = blake2b(digest_size=32)
+        bh.update(binascii.unhexlify("0000000000000000000000000000000000000000000000000000000000000006"))  # Prefix for state blocks
+        bh.update(binascii.unhexlify(public_key))
+        bh.update(binascii.unhexlify(previous))
+        bh.update(binascii.unhexlify(representative))
+        bh.update(binascii.unhexlify(balance))
+        bh.update(binascii.unhexlify(link))
+        return bh.digest()
+
+    def _sign_block_hash(self: Self, block_hash: str, private_key: str) -> str:
+        """Sign a block hash.
+
+        Args:
+            block_hash (str): The block hash to sign.
+            private_key (str): The private key of the account.
+
+        Returns:
+            str: The signature of the block hash.
+        """
+        sk = ed25519.SigningKey(binascii.unhexlify(private_key))
+        sig = sk.sign(binascii.unhexlify(block_hash))
+        return sig.hex()
+
     def open_account(self: Self, account: str, private_key: str, public_key: str, hash: str, balance: str) -> dict:
         """Open a new Nano account.
 
@@ -234,18 +270,8 @@ class RPC():
         print("Work: " + work)
 
         # Calculate the signature
-        sk = ed25519.SigningKey(binascii.unhexlify(private_key))
-
-        bh = blake2b(digest_size=32)
-        bh.update(binascii.unhexlify("0000000000000000000000000000000000000000000000000000000000000006"))  # Prefix for state blocks
-        bh.update(binascii.unhexlify(public_key))
-        bh.update(binascii.unhexlify(previous))
-        bh.update(binascii.unhexlify(public_key))
-        bh.update(binascii.unhexlify(balance))
-        bh.update(binascii.unhexlify(hash))
-
-        sig = sk.sign(bh.digest())
-        signature = sig.hex()
+        new_block_hash = self._calculate_block_hash(public_key, previous, representative, balance, hash)
+        signature = self._sign_block_hash(new_block_hash, private_key)
 
         # Create the block
         block = {
