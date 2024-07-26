@@ -286,7 +286,6 @@ class RPC():
             "representative": representative,
             "balance": balance,
             "link": hash,
-            "link_as_account": hash,
             "signature": signature,
             "work": work
         }
