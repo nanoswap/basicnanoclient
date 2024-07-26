@@ -270,7 +270,7 @@ class RPC():
             dict: A dictionary containing information about the transaction.
         """
         previous = '0000000000000000000000000000000000000000000000000000000000000000'
-        representative = "nano_1qzjqcpmwh9osbht7mub5jhyyfb69pyddjk9my6nn8efjxqeu85c44py6zff"  # Nano foundation representative
+        representative = "nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j"  # "nano_1qzjqcpmwh9osbht7mub5jhyyfb69pyddjk9my6nn8efjxqeu85c44py6zff"  # Nano foundation representative
 
         # Convert representative to public key
         representative_key = Utils.nano_address_to_public_key(representative)
@@ -285,6 +285,7 @@ class RPC():
 
         # Calculate the signature
         new_block_hash = self._calculate_block_hash(public_key, previous, representative_key, balance, send_block_hash)
+        print(new_block_hash)
         signature = self._sign_block_hash(new_block_hash, private_key, public_key)
 
         # Create the block
