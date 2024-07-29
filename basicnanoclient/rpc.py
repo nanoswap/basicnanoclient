@@ -270,13 +270,13 @@ class RPC():
             dict: A dictionary containing information about the transaction.
         """
         previous = '0000000000000000000000000000000000000000000000000000000000000000'
-        representative = "nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j"  # "nano_1qzjqcpmwh9osbht7mub5jhyyfb69pyddjk9my6nn8efjxqeu85c44py6zff"  # Nano foundation representative
+        representative = account #"nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j"  # "nano_1qzjqcpmwh9osbht7mub5jhyyfb69pyddjk9my6nn8efjxqeu85c44py6zff"  # Nano foundation representative
 
         # Convert representative to public key
         representative_key = Utils.nano_address_to_public_key(representative)
 
-        # Use received_amount as the new balance since it's the first block
-        balance = hex(int(received_amount))[2:].upper().rjust(32, '0')
+        # # Use received_amount as the new balance since it's the first block
+        balance_hex = hex(int(received_amount))[2:].upper().rjust(32, '0')
 
         # Generate work using public key
         if work is None:
@@ -284,8 +284,9 @@ class RPC():
             print("Work: " + work)
 
         # Calculate the signature
-        new_block_hash = self._calculate_block_hash(public_key, previous, representative_key, balance, send_block_hash)
-        print(new_block_hash)
+        new_block_hash = self._calculate_block_hash(public_key, previous, representative_key, balance_hex, send_block_hash)
+        print(binascii.hexlify(new_block_hash).decode())
+        new_block_hash = binascii.unhexlify("59126B47261A5C7832197CB7393D7B1B87648E8B1863CB84F12263B4E8C947A9")
         signature = self._sign_block_hash(new_block_hash, private_key, public_key)
 
         # Create the block
@@ -294,15 +295,16 @@ class RPC():
             "account": account,
             "previous": previous,
             "representative": representative,
-            "balance": balance,
+            "balance": received_amount,
             "link": send_block_hash,
             "signature": signature,
             "work": work
         }
 
+        print(block)
         # Process the block
-        response = self.process(block, "open")
-        return response
+        # response = self.process(block, "open")
+        # return response
 
     # def receive_first(self: Self, block_hash: str, private_key: str, account: str) -> dict:
     #     """Receive the first block for an account.
