@@ -155,6 +155,12 @@ class RPC():
         response = requests.post(self.rpc_network, json=request)
         return response.json()
 
+    def receive_all(self: Self):
+        pass
+
+    def receive(self: Self):
+        pass
+
     def send(
             self: Self,
             source: str,
@@ -190,7 +196,6 @@ class RPC():
 
         # Get public key for the destination account
         destination_public_key = Utils.nano_address_to_public_key(destination)
-        print(destination_public_key)
 
         # Create the send block
         block = {
@@ -206,7 +211,6 @@ class RPC():
 
         # Sign the block
         block["signature"] = Wallet.sign_block(block, key)
-        print(block)
 
         # Process the block
         response = self.process(block, "send")
@@ -227,12 +231,11 @@ class RPC():
             dict: A dictionary containing information about the transaction.
         """
         previous = '0000000000000000000000000000000000000000000000000000000000000000'
-        representative = account #"nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j"  # "nano_1qzjqcpmwh9osbht7mub5jhyyfb69pyddjk9my6nn8efjxqeu85c44py6zff"  # Nano foundation representative
+        representative = account
 
         # Generate work using public key
         if work is None:
             work = Wallet.generate_work_rpc(public_key, self.rpc_network)
-            print("Work: " + work)
 
         # Create the block
         block = {
