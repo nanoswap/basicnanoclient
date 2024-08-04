@@ -15,6 +15,7 @@ class Utils():
     account_lookup = "13456789abcdefghijkmnopqrstuwxyz"
     alphabet = "13456789abcdefghijkmnopqrstuwxyz"
     account_reverse = "~0~1234567~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~89:;<=>?@AB~CDEFGHIJK~LMNO~~~~~"
+    account_lookup_2 = {char: i for i, char in enumerate(NANO_ALPHABET)}
 
     @staticmethod
     def generate_seed() -> str:
@@ -116,14 +117,14 @@ class Utils():
         elif address.startswith('xrb_'):
             address = address[4:]
 
-        account_map = "13456789abcdefghijkmnopqrstuwxyz"
-        account_lookup = {account_map[i]: i for i in range(len(account_map))}
-
-        key_bytes = BitArray()
+        key_bits = BitArray()
         for char in address:
-            key_bytes.append(BitArray(uint=account_lookup[char], length=5))
+            key_bits.append(BitArray(uint=Utils.account_lookup_2[char], length=5))
 
         # The first four bits are dropped
-        key_bytes = key_bytes[4:]
-        public_key = key_bytes.bytes.hex().upper()
+        key_bits = key_bits[4:]
+
+        # Extract exactly 32 bytes (256 bits) for the public key
+        public_key_bits = key_bits[:256]
+        public_key = public_key_bits.bytes.hex().lower()
         return public_key

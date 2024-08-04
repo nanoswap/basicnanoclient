@@ -28,20 +28,6 @@ class RPC():
         """Constructor."""
         self.rpc_network = rpc_network
 
-    def key_expand(self: Self, key: str) -> str:
-        """Expand a Nano private key to a public key.
-
-        Args:
-            key (str): The private key to expand.
-
-        Returns:
-            str: The public key.
-        """
-        return session.post(self.rpc_network, json={
-            "action": "key_expand",
-            "key": key
-        }).json()
-
     def account_info(self: Self, account: str) -> Dict[str, Any]:
         """Retrieve information about a Nano account.
 
@@ -160,61 +146,71 @@ class RPC():
         Returns:
             dict: A dictionary containing information about the block.
         """
-        print(block)
-        block_json = json.dumps(block)
         request = {
             "action": "process",
             "json_block": "true",
             "sub_type": sub_type,
             "block": block
         }
-        print(request)
         response = requests.post(self.rpc_network, json=request)
         return response.json()
 
     def send(
             self: Self,
-            wallet: str,
             source: str,
             destination: str,
             amount: int,
-            key: str) -> Dict[str, Any]:
+            key: str,
+            work: str = None) -> Dict[str, Any]:
         """Send a specified amount of Nano from one account to another.
 
         Args:
-            wallet (str): The Nano wallet address.
             source (str): The Nano account address to send from.
             destination (str): The Nano account address to send to.
             amount (int): The amount of Nano to send in raw units.
             key (str): The private key of the account sending the Nano.
+            work (str): The proof of work for the block.
 
         Returns:
             A dictionary containing information about the transaction.
         """
-        # Retrieve the wallet info
-        wallet_info = self.wallet_info(wallet)
-        key = wallet_info.get(key)
-
-        # Retrieve the account info
         account_info = self.account_info(source)
-        previous = account_info.get('frontier')
-        representative = account_info.get('representative')
+        previous = account_info["frontier"]
+        balance = int(account_info["balance"])
 
-        # Calculate new balance after sending the amount
-        # Convert balance to int for calculations
-        current_balance = int(account_info.get('balance'))
-        # Subtract amount to be sent and convert back to str
-        new_balance = str(current_balance - amount)
+        # Calculate the new balance after sending
+        new_balance = balance - amount
 
-        # Sign and send the transaction
-        return self.sign_and_send(
-            previous,
-            source,
-            representative,
-            new_balance,
-            destination,
-            key
-        )
+        # Representative can be the same as the source account or a dedicated representative
+        representative = source
+
+        # Generate work for the previous block
+        if work is None:
+            work = Wallet.generate_work_rpc(previous, self.rpc_network)
+
+        # Get public key for the destination account
+        destination_public_key = Utils.nano_address_to_public_key(destination)
+        print(destination_public_key)
+
+        # Create the send block
+        block = {
+            "type": "state",
+            "account": source,
+            "previous": previous,
+            "representative": representative,
+            "balance": str(new_balance),
+            "link": destination_public_key,
+            "signature": "",
+            "work": work
+        }
+
+        # Sign the block
+        block["signature"] = Wallet.sign_block(block, key)
+        print(block)
+
+        # Process the block
+        response = self.process(block, "send")
+        return response
 
     def open_account(self: Self, account: str, private_key: str, public_key: str, send_block_hash: str, received_amount: str, work: str = None) -> dict:
         """Open a new Nano account.
@@ -235,7 +231,7 @@ class RPC():
 
         # Generate work using public key
         if work is None:
-            work = Wallet.generate_work_rpc(public_key)
+            work = Wallet.generate_work_rpc(public_key, self.rpc_network)
             print("Work: " + work)
 
         # Create the block
@@ -251,7 +247,7 @@ class RPC():
         }
 
         # Add the signature
-        block["signature"] = Wallet.sign_block_rpc(block, private_key)
+        block["signature"] = Wallet.sign_block(block, private_key)
 
         # Process the block
         response = self.process(block, "open")

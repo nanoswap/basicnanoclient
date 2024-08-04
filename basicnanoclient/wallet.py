@@ -6,6 +6,7 @@ import struct
 from nacl.signing import SigningKey, VerifyKey
 from nacl.encoding import RawEncoder
 from ed25519_blake2b import SigningKey
+from binascii import hexlify, unhexlify
 from hashlib import blake2b
 import hashlib
 import requests
@@ -157,67 +158,61 @@ class Wallet():
         return account
 
     @staticmethod
-    def generate_work(block_hash, difficulty=0xfffffff800000000):
-        """Generate a valid proof-of-work for the given root."""
-        nonce = 0
-        block_hash_bytes = bytes.fromhex(block_hash)  # Convert block hash from hex to bytes
-
-        while True:
-            # Convert nonce to bytes
-            nonce_bytes = struct.pack('<Q', nonce)
-
-            # Combine block hash and nonce
-            combined = block_hash_bytes + nonce_bytes
-
-            # Calculate the Blake2b hash of the combined data
-            work_hash = hashlib.blake2b(combined, digest_size=8).digest()
-
-            # Convert the result to an integer
-            work_hash_int = int.from_bytes(work_hash, byteorder='little')
-
-            # Check if the work hash meets the difficulty requirement
-            if work_hash_int >= difficulty:
-                return nonce_bytes.hex()
-
-            # Increment nonce
-            nonce += 1
-
-    @staticmethod
-    def generate_work_rpc(hash: str) -> str:
-        """Generate work for a given hash.
-
-        Args:
-            hash (str): The hash to generate work for.
-
-        Returns:
-            str: The generated work.
-        """
-        session = requests.Session()
-        response = session.post("http://127.0.0.1:17076", json={
-            "action": "work_generate",
-            "hash": hash,
-            "multiplier": "1.0"
-        }).json()
-        print(response)
-        return response['work']
-
-    @staticmethod
-    def sign_block_rpc(block: dict, private_key: str) -> dict:
-        """Sign a block using the RPC server.
+    def sign_block(block: dict, private_key: str) -> str:
+        """Sign a block using a private key.
 
         Args:
             block (dict): The block to sign.
             private_key (str): The private key to sign the block with.
 
         Returns:
-            dict: The signed block.
+            str: The signature of the block.
+        """
+        # Create signing key from the private key bytes
+        signing_key = SigningKey(unhexlify(private_key))
+
+        # Convert balance from decimal to hexadecimal and pad to 32 characters
+        balance_hex = hex(int(block["balance"]))[2:].zfill(32)
+
+        # Determine block type and prepare the block contents to be signed
+        block_type = block["type"]
+        if block_type == "state":
+            block_contents = (
+                unhexlify("0000000000000000000000000000000000000000000000000000000000000006") +
+                unhexlify(Utils.nano_address_to_public_key(block["account"])) +
+                unhexlify(block["previous"]) +
+                unhexlify(Utils.nano_address_to_public_key(block["representative"])) +
+                unhexlify(balance_hex) +
+                unhexlify(block["link"])
+            )
+        else:
+            raise ValueError("Unsupported block type: {}".format(block_type))
+
+        # Hash the block contents
+        block_hash = blake2b(block_contents, digest_size=32).digest()
+
+        # Sign the hash
+        signed_message = signing_key.sign(block_hash)
+
+        # Convert the signature to hex and return it
+        return hexlify(signed_message).decode()
+
+    @staticmethod
+    def generate_work_rpc(hash: str, rpc_network: str = "http://127.0.0.1:17076") -> str:
+        """Generate work for a given hash.
+
+        Args:
+            hash (str): The hash to generate work for.
+            rpc_network (str): The RPC network to use.
+
+        Returns:
+            str: The generated work.
         """
         session = requests.Session()
-        response = session.post("http://127.0.0.1:17076", json={
-            "action": "sign",
-            "json_block": "true",
-            "block": block,
-            "key": private_key
+        response = session.post(rpc_network, json={
+            "action": "work_generate",
+            "hash": hash,
+            "multiplier": "1.0"
         }).json()
         print(response)
-        return response["signature"]
+        return response['work']
