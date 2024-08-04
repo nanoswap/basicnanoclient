@@ -32,6 +32,7 @@ setup(
         "requests",
         "pynacl",
         "ed25519",
-        "bitstring"
+        "bitstring",
+        "ed25519_blake2b"
     ],
 )

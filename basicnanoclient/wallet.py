@@ -5,6 +5,7 @@ import binascii
 import struct
 from nacl.signing import SigningKey, VerifyKey
 from nacl.encoding import RawEncoder
+from ed25519_blake2b import SigningKey
 from hashlib import blake2b
 import hashlib
 import requests
@@ -77,9 +78,9 @@ class Wallet():
             64-character hexadecimal string representing
             the Nano public key and 'account' is the Nano account address.
         """
-        sk = SigningKey(binascii.unhexlify(key))
-        vk = sk.verify_key
-        public_key = vk.encode(RawEncoder)  # Get the raw bytes directly
+        signing_key = SigningKey(binascii.unhexlify(key))
+        # private_key = signing_key.to_bytes().hex()
+        public_key = signing_key.get_verifying_key().to_bytes()
         account = self.public_key_to_account(public_key)
         return {"public": public_key.hex(), "account": account}
 
@@ -199,3 +200,24 @@ class Wallet():
         }).json()
         print(response)
         return response['work']
+
+    @staticmethod
+    def sign_block_rpc(block: dict, private_key: str) -> dict:
+        """Sign a block using the RPC server.
+
+        Args:
+            block (dict): The block to sign.
+            private_key (str): The private key to sign the block with.
+
+        Returns:
+            dict: The signed block.
+        """
+        session = requests.Session()
+        response = session.post("http://127.0.0.1:17076", json={
+            "action": "sign",
+            "json_block": "true",
+            "block": block,
+            "key": private_key
+        }).json()
+        print(response)
+        return response["signature"]

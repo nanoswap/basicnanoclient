@@ -28,6 +28,20 @@ class RPC():
         """Constructor."""
         self.rpc_network = rpc_network
 
+    def key_expand(self: Self, key: str) -> str:
+        """Expand a Nano private key to a public key.
+
+        Args:
+            key (str): The private key to expand.
+
+        Returns:
+            str: The public key.
+        """
+        return session.post(self.rpc_network, json={
+            "action": "key_expand",
+            "key": key
+        }).json()
+
     def account_info(self: Self, account: str) -> Dict[str, Any]:
         """Retrieve information about a Nano account.
 
@@ -202,59 +216,6 @@ class RPC():
             key
         )
 
-    # def receive(self: Self, hash: str, private_key: str) -> dict:
-    #     """Receive a pending Nano transaction.
-
-    #     Args:
-    #         hash (str): The hash of the pending transaction.
-    #         private_key (str): The private key of the receiving account.
-
-    #     Returns:
-    #         dict: A dictionary containing information about the transaction.
-    #     """
-    #     # Retrieve the block info
-    #     block_info = self.block_info(hash)
-
-    #     # Ensure this is the first block for the receiving account
-    #     previous = 
-
-    def _calculate_block_hash(self: Self, public_key: str, previous: str, representative: str, balance: str, link: str) -> bytes:
-        """Calculate the hash of a Nano block.
-
-        Args:
-            public_key (str): The public key of the account.
-            previous (str): The previous block hash.
-            representative (str): The representative account.
-            balance (str): The balance of the account.
-            link (str): The link hash.
-
-        Returns:
-            bytes: The hash of the block.
-        """
-        bh = blake2b(digest_size=32)
-        bh.update(BitArray(hex='0000000000000000000000000000000000000000000000000000000000000006').bytes)
-        bh.update(BitArray(hex=public_key).bytes)
-        bh.update(BitArray(hex=previous).bytes)
-        bh.update(BitArray(hex=representative).bytes)
-        bh.update(BitArray(hex=balance).bytes)
-        bh.update(BitArray(hex=link).bytes)
-        return bh.digest()
-
-    def _sign_block_hash(self: Self, block_hash: str, private_key: str, public_key: str) -> str:
-        """Sign a block hash.
-
-        Args:
-            block_hash (str): The block hash to sign.
-            private_key (str): The private key of the account.
-            public_key (str): The public key of the account.
-
-        Returns:
-            str: The signature of the block hash.
-        """
-        sk = ed25519.SigningKey(binascii.unhexlify(private_key) + binascii.unhexlify(public_key))
-        sig = sk.sign(block_hash)
-        return binascii.hexlify(sig).decode()
-
     def open_account(self: Self, account: str, private_key: str, public_key: str, send_block_hash: str, received_amount: str, work: str = None) -> dict:
         """Open a new Nano account.
 
@@ -272,22 +233,10 @@ class RPC():
         previous = '0000000000000000000000000000000000000000000000000000000000000000'
         representative = account #"nano_1jg8zygjg3pp5w644emqcbmjqpnzmubfni3kfe1s8pooeuxsw49fdq1mco9j"  # "nano_1qzjqcpmwh9osbht7mub5jhyyfb69pyddjk9my6nn8efjxqeu85c44py6zff"  # Nano foundation representative
 
-        # Convert representative to public key
-        representative_key = Utils.nano_address_to_public_key(representative)
-
-        # # Use received_amount as the new balance since it's the first block
-        balance_hex = hex(int(received_amount))[2:].upper().rjust(32, '0')
-
         # Generate work using public key
         if work is None:
             work = Wallet.generate_work_rpc(public_key)
             print("Work: " + work)
-
-        # Calculate the signature
-        new_block_hash = self._calculate_block_hash(public_key, previous, representative_key, balance_hex, send_block_hash)
-        print(binascii.hexlify(new_block_hash).decode())
-        new_block_hash = binascii.unhexlify("59126B47261A5C7832197CB7393D7B1B87648E8B1863CB84F12263B4E8C947A9")
-        signature = self._sign_block_hash(new_block_hash, private_key, public_key)
 
         # Create the block
         block = {
@@ -297,57 +246,13 @@ class RPC():
             "representative": representative,
             "balance": received_amount,
             "link": send_block_hash,
-            "signature": signature,
+            "signature": "",
             "work": work
         }
 
-        print(block)
+        # Add the signature
+        block["signature"] = Wallet.sign_block_rpc(block, private_key)
+
         # Process the block
-        # response = self.process(block, "open")
-        # return response
-
-    # def receive_first(self: Self, block_hash: str, private_key: str, account: str) -> dict:
-    #     """Receive the first block for an account.
-
-    #     Args:
-    #         block_hash (str): The block hash to receive (from `receivable`)
-    #         private_key (str): The private key of the receiving account
-    #         account (str): The account to receive the block
-
-    #     Returns:
-    #         dict: A dictionary containing information about the transaction.
-    #     """
-
-    #     # Open the account
-    #     self.open_account(account, private_key, block_hash)
-
-    #     # Retrieve the block info
-
-    #     block_info = self.block_info(block_hash)
-
-    #     # Ensure this is the first block for the receiving account
-    #     previous = '0000000000000000000000000000000000000000000000000000000000000000'
-
-    #     # response = self.sign_and_process(
-    #     #     previous=previous,
-    #     #     account=block_info['contents']['link_as_account'],
-    #     #     representative=block_info['contents']['representative'],
-    #     #     balance=block_info['amount'],
-    #     #     link=block_hash,
-    #     #     key=private_key,
-    #     #     subtype="open"
-    #     # )
-
-    #     # Create the block
-    #     block = Wallet.block_create(
-    #         previous,
-    #         account,
-    #         representative,
-    #         balance,
-    #         link,
-    #         key
-    #     )
-
-    #     # Process the block
-    #     response = self.process(block, "open")
-    #     return response
+        response = self.process(block, "open")
+        return response

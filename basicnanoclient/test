@@ -1,5 +1,1 @@
-curl -X POST -H "Content-Type: application/json" -d '{
-  "action": "process",
-  "sub_type": "open",
-  "block": "{\"type\": \"state\", \"account\": \"nano_39iskb8eqg8dzihefzd38wwex1chu8hcwrceyfhh37yhinaet9yy7hw4s9sp\", \"previous\": \"0000000000000000000000000000000000000000000000000000000000000000\", \"representative\": \"nano_1qzjqcpmwh9osbht7mub5jhyyfb69pyddjk9my6nn8efjxqeu85c44py6zff\", \"balance\": \"2000000000000000000000000000\", \"link\": \"4BD87F59EB8CD3AA4661B6AEE3381CD107E00D31120214C226C486641391361A\", \"signature\": \"be5950845c5c35a26f3ddf7ebccb5c2431eae5cde1ddeda4ab4a62213307eef02d3eee0bc2e0e856ea7294e0fc1c91fc97f1826b6ef0bb3cf6fceaab29f4030a\", \"work\": \"9a0692d5c6c08e85\"}"
-}' http://127.0.0.1:17076
+{"type": "state", "account": "nano_39iskb8eqg8dzihefzd38wwex1chu8hcwrceyfhh37yhinaet9yy7hw4s9sp", "previous": "0000000000000000000000000000000000000000000000000000000000000000", "representative": "nano_39iskb8eqg8dzihefzd38wwex1chu8hcwrceyfhh37yhinaet9yy7hw4s9sp", "balance": "2000000000000000000000000000", "link": "4BD87F59EB8CD3AA4661B6AEE3381CD107E00D31120214C226C486641391361A", "signature": "8b4158fc6eb4352099307b77d196b4655295d217431a190a96d6fdc29e011567ae0715cf0ccf4faac28143d761954bf29b4009fee7db92fbf013c52f0c24b709", "work": "9a0692d5c6c08e85"}
