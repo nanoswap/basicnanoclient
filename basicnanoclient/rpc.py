@@ -158,8 +158,57 @@ class RPC():
     def receive_all(self: Self):
         pass
 
-    def receive(self: Self):
-        pass
+    def receive(
+            self: Self,
+            account: str,
+            private_key: str,
+            source_hash: str,
+            received_amount: int,
+            work: str = None) -> Dict[str, Any]:
+        """Create a receive block for an already open Nano account.
+
+        Args:
+            account (str): The Nano account address to receive into.
+            private_key (str): The private key of the account receiving the Nano.
+            source_hash (str): The hash of the block being received.
+            received_amount (int): The amount of Nano being received in raw units.
+            work (str): The proof of work for the block.
+
+        Returns:
+            A dictionary containing information about the transaction.
+        """
+        account_info = self.account_info(account)
+        previous = account_info["frontier"]
+        balance = account_info["balance"]
+
+        # Calculate the new balance after receiving
+        new_balance = str(int(balance) + int(received_amount))
+
+        # Representative can be the same as the account or a dedicated representative
+        representative = account
+
+        # Generate work for the previous block
+        if work is None:
+            work = Wallet.generate_work_rpc(previous, self.rpc_network)
+
+        # Create the receive block
+        block = {
+            "type": "state",
+            "account": account,
+            "previous": previous,
+            "representative": representative,
+            "balance": new_balance,
+            "link": source_hash,
+            "signature": "",
+            "work": work
+        }
+
+        # Sign the block
+        block["signature"] = Wallet.sign_block(block, private_key)
+
+        # Process the block
+        response = self.process(block, "receive")
+        return response
 
     def send(
             self: Self,
@@ -216,7 +265,14 @@ class RPC():
         response = self.process(block, "send")
         return response
 
-    def open_account(self: Self, account: str, private_key: str, public_key: str, send_block_hash: str, received_amount: str, work: str = None) -> dict:
+    def open_account(
+            self: Self,
+            account: str,
+            private_key: str,
+            public_key: str,
+            send_block_hash: str,
+            received_amount: str,
+            work: str = None) -> dict:
         """Open a new Nano account.
 
         Args:
