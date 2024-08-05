@@ -1,5 +1,9 @@
 requests
 setuptools
+pynacl
+ed25519
+ed25519_blake2b
+bitstring
 
 # for testing
 nox

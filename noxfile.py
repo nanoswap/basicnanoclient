@@ -7,6 +7,7 @@ def build(session: nox.Session) -> None:
     session.install("-r", "requirements.txt")
     session.install("requests")
     session.install("build")
+    session.install("pynacl")
     session.env["PYTHONPATH"] = "basicnanoclient"
     session.run("python", "-m", "build")
 

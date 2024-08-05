@@ -5,11 +5,11 @@ source = ["basicnanoclient", "*/site-packages"]
 show_missing = true
 
 [build-system]
-requires = ["setuptools", "wheel", "requests"]
+requires = ["setuptools", "wheel", "requests", "pynacl", "ed25519", "bitstring", "ed25519_blake2b"]
 
 [project]
 name = "basicnanoclient"
-version = "0.1.1"
+version = "0.5.0"
 description = "Nano RPC python client"
 urls = {'Bug Tracker' = 'https://github.com/nanoswap/basicnanoclient/issues'}
 classifiers = [
@@ -22,6 +22,10 @@ readme = 'README.md'
 license = {'file' = 'LICENSE'}
 dependencies = [
     "requests",
+    "pynacl",
+    "ed25519_blake2b",
+    "ed25519",
+    "bitstring",
     "setuptools",
     "mkdocs",
     "mkdocstrings",

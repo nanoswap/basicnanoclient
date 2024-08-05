@@ -1,6 +1,6 @@
 # basicnanoclient
 
-A nano (XNO) cryptocurrency RPC python client
+A nano (XNO) cryptocurrency RPC python client and client side wallet
 
 ![](https://img.shields.io/readthedocs/nanoclient?label=readthedocs)
 ![](https://img.shields.io/github/actions/workflow/status/nanoswap/nanoclient/test.yml?label=tests)
@@ -18,6 +18,10 @@ A nano (XNO) cryptocurrency RPC python client
 ```
 pip install basicnanoclient
 ```
+
+# Usage
+
+https://github.com/nanoswap/basicnanoclient/blob/main/notebooks/nano.ipynb
 
 ## Documentation
 
@@ -41,3 +45,11 @@ To run all checks: `nox`
 
 - install a local nano test node
 - run it locally
+
+## Running a local Nano Node
+
+```
+# https://github.com/nanocurrency/nano-node/releases/
+docker pull nanocurrency/nano-test:${NANO_TAG}
+docker run --restart=unless-stopped -d -p 127.0.0.1:17076:17076 -v ${NANO_HOST_DIR}:/root --name ${NANO_NAME} nanocurrency/nano-test:${NANO_TAG}
+```
