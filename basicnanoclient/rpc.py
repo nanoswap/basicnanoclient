@@ -156,7 +156,8 @@ class RPC():
         return response.json()
 
     def receive_all(self: Self):
-        pass
+        """Not Implemented."""
+        print("Not Implemented")
 
     def receive(
             self: Self,

@@ -201,6 +201,8 @@ class Wallet():
     def generate_work_rpc(hash: str, rpc_network: str = "http://127.0.0.1:17076") -> str:
         """Generate work for a given hash.
 
+        TODO: move to RPC class
+
         Args:
             hash (str): The hash to generate work for.
             rpc_network (str): The RPC network to use.

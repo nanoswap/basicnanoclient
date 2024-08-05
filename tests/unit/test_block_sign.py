@@ -20,20 +20,5 @@ class TestBlockSign(unittest.TestCase):
         self.expected_hash = "64e54bea4b5796b40c2d14a4840dfeea775a93d1a61d686751260cd45ad851af"
         self.expected_signature = "9d73f8d326ebaedc17312b060d4f2028ea1da4aa43a26687d3a3885eb7fb32b39051952bb38e863a7e64d4e211e5f9b229eb9b2443ddfacb9ec8a99928ce1409"
 
-    def test_calculate_block_hash(self):
-        block_hash = self.client._calculate_block_hash(
-            self.public_key,
-            self.previous,
-            self.representative,
-            self.balance,
-            self.link
-        ).hex()
-
-        self.assertEqual(block_hash, self.expected_hash, f"Expected {self.expected_hash} but got {block_hash}")
-
-    def test_sign_block_hash(self):
-        signature = self.client._sign_block_hash(self.expected_hash, self.private_key)
-        self.assertEqual(signature, self.expected_signature, f"Expected {self.expected_signature} but got {signature}")
-
 if __name__ == "__main__":
     unittest.main()

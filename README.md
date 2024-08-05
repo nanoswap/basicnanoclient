@@ -19,6 +19,10 @@ A nano (XNO) cryptocurrency RPC python client and client side wallet
 pip install basicnanoclient
 ```
 
+# Usage
+
+https://github.com/nanoswap/basicnanoclient/blob/main/notebooks/nano.ipynb
+
 ## Documentation
 
 https://basicnanoclient.readthedocs.io/

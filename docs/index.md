@@ -8,6 +8,10 @@
 pip install basicnanoclient
 ```
 
+# Usage
+
+https://github.com/nanoswap/basicnanoclient/blob/main/notebooks/nano.ipynb
+
 # Running a local Nano Node
 
 ```
@@ -18,5 +22,4 @@ docker run --restart=unless-stopped -d -p 127.0.0.1:17076:17076 -v ${NANO_HOST_D
 
 # See also
 
-For more usage information, see: 
 [github.com/nanoswap/nanohelp](https://github.com/nanoswap/nanohelp)
