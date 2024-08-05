@@ -1,5 +1,5 @@
 site_name: "basicnanoclient"
-repo_url: https://github.com/nanoswap/nanoclient
+repo_url: https://github.com/nanoswap/basicnanoclient
 edit_uri: blob/main/docs/
 
 nav:
